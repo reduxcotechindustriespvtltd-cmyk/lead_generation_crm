@@ -20,17 +20,68 @@ enum UserRole {
   SALES_EXECUTIVE
 }
 
+enum OrgPlan {
+  FB_ONLY
+  FB_WHATSAPP
+}
+
+enum SubscriptionStatus {
+  PENDING_PAYMENT
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+}
+
+// A paying SaaS tenant on the shared multi-tenant deployment. Nullable on
+// User because self-hosted single-tenant deployments (see OrgSettings below)
+// never populate this — only accounts created via the public /signup flow do.
+model Organization {
+  id                   String             @id @default(cuid())
+  name                 String
+  plan                 OrgPlan
+  subscriptionStatus   SubscriptionStatus @default(PENDING_PAYMENT)
+  phonePeMerchantSubId String?            @unique
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  users User[]
+
+  @@map("organizations")
+}
+
+// Bridges the gap between initiating PhonePe checkout (browser-side) and the
+// PhonePe webhook (server-to-server, no access to the browser's cookies).
+// Created only at the payment step — earlier signup steps stay cookie-only,
+// so an abandoned signup before payment never touches the database.
+model PendingSignup {
+  id                     String   @id @default(cuid())
+  merchantOrderId        String   @unique
+  merchantSubscriptionId String
+  name                   String
+  email                  String
+  phone                  String?
+  passwordHash           String
+  avatarUrl              String?
+  plan                   OrgPlan
+  createdAt              DateTime @default(now())
+
+  @@map("pending_signups")
+}
+
 model User {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  role         UserRole @default(SALES_EXECUTIVE)
-  phone        String?
-  avatarUrl    String?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String        @id @default(cuid())
+  name           String
+  email          String        @unique
+  passwordHash   String
+  role           UserRole      @default(SALES_EXECUTIVE)
+  phone          String?
+  avatarUrl      String?
+  isActive       Boolean       @default(true)
+  organizationId String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization Organization? @relation(fields: [organizationId], references: [id])
 
   refreshTokens             RefreshToken[]
   assignedLeads             Lead[]                 @relation("LeadAssignee")
@@ -47,6 +98,7 @@ model User {
   sentWhatsAppMessages      WhatsAppMessage[]
 
   @@index([role])
+  @@index([organizationId])
   @@map("users")
 }
 

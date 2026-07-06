@@ -9,7 +9,7 @@ export function proxy(request: NextRequest) {
   const token = request.cookies.get(ACCESS_COOKIE_NAME)?.value;
   const session = token ? verifyAccessToken(token) : null;
 
-  if (pathname === "/login") {
+  if (pathname === "/login" || pathname === "/signup") {
     if (session) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
@@ -47,5 +47,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/login", "/dashboard/:path*"],
+  matcher: ["/", "/login", "/signup", "/dashboard/:path*"],
 };
