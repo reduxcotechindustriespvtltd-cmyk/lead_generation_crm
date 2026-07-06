@@ -1,0 +1,96 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: gsb_crm_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-gsb_crm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-gsb_crm}
+    volumes:
+      - gsb_crm_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gsb_crm} -d ${POSTGRES_DB:-gsb_crm}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+
+  app:
+    build: .
+    container_name: gsb_crm_app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - internal
+      - web
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: gsb_crm_caddy
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - web
+
+  # One-off maintenance tasks — reuse the `builder` stage (full source + Prisma CLI)
+  # rather than the slim runtime image. Run explicitly, e.g.:
+  #   docker compose -f docker-compose.prod.yml --profile tools run --rm migrate
+  #   docker compose -f docker-compose.prod.yml --profile tools run --rm bootstrap
+  migrate:
+    build:
+      context: .
+      target: builder
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+    profiles: ["tools"]
+    command: ["npx", "prisma", "migrate", "deploy"]
+
+  bootstrap:
+    build:
+      context: .
+      target: builder
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+    profiles: ["tools"]
+    command: ["npx", "tsx", "prisma/bootstrap.ts"]
+
+volumes:
+  gsb_crm_pgdata:
+  caddy_data:
+  caddy_config:
+
+networks:
+  internal:
+  web:
