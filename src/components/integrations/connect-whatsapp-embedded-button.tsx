@@ -10,6 +10,7 @@ import {
   loadFacebookSdk,
   isWhatsAppEmbeddedSignupMessage,
   type WhatsAppEmbeddedSignupMessage,
+  type FacebookLoginResponse,
 } from "@/lib/whatsapp/fb-sdk";
 
 type SignupConfig = {
@@ -69,41 +70,50 @@ export function ConnectWhatsAppEmbeddedButton() {
     try {
       const FB = await loadFacebookSdk(config.appId, config.graphApiVersion);
 
-      FB.login(
-        async (response) => {
-          const code = response.authResponse?.code;
-          const sessionInfo = sessionInfoRef.current;
+      // FB.login's internal validator rejects `async` functions (it checks for a
+      // plain "Function", not "AsyncFunction") — so this callback must stay
+      // synchronous and hand off to a regular async helper instead.
+      function handleLoginResponse(response: FacebookLoginResponse) {
+        void processLoginResponse(response);
+      }
 
-          if (!code || !sessionInfo?.waba_id || !sessionInfo?.phone_number_id) {
-            setIsConnecting(false);
-            // A closed/cancelled popup with no code is a silent no-op, not an error.
-            if (code) toast.error("WhatsApp signup didn't return the expected account details");
+      async function processLoginResponse(response: FacebookLoginResponse) {
+        const code = response.authResponse?.code;
+        const sessionInfo = sessionInfoRef.current;
+
+        if (!code || !sessionInfo?.waba_id || !sessionInfo?.phone_number_id) {
+          setIsConnecting(false);
+          // A closed/cancelled popup with no code is a silent no-op, not an error.
+          if (code) toast.error("WhatsApp signup didn't return the expected account details");
+          return;
+        }
+
+        try {
+          const res = await fetch("/api/whatsapp/embedded-signup/exchange", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              code,
+              wabaId: sessionInfo.waba_id,
+              phoneNumberId: sessionInfo.phone_number_id,
+              businessId: sessionInfo.business_id,
+            }),
+          });
+          const result = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            toast.error(result.error ?? "Failed to connect WhatsApp number");
             return;
           }
+          if (result.warning) toast.warning(result.warning);
+          toast.success("WhatsApp number connected");
+          router.refresh();
+        } finally {
+          setIsConnecting(false);
+        }
+      }
 
-          try {
-            const res = await fetch("/api/whatsapp/embedded-signup/exchange", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                code,
-                wabaId: sessionInfo.waba_id,
-                phoneNumberId: sessionInfo.phone_number_id,
-                businessId: sessionInfo.business_id,
-              }),
-            });
-            const result = await res.json().catch(() => ({}));
-            if (!res.ok) {
-              toast.error(result.error ?? "Failed to connect WhatsApp number");
-              return;
-            }
-            if (result.warning) toast.warning(result.warning);
-            toast.success("WhatsApp number connected");
-            router.refresh();
-          } finally {
-            setIsConnecting(false);
-          }
-        },
+      FB.login(
+        handleLoginResponse,
         {
           config_id: config.configId,
           response_type: "code",
