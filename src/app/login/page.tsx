@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Building2, BarChart3, CalendarClock, Users2 } from "lucide-react";
 import { LoginForm } from "@/components/auth/login-form";
 import { getOrgSettings } from "@/lib/queries/org-settings";
@@ -122,8 +123,11 @@ export default async function LoginPage() {
             <LoginForm />
           </Suspense>
 
-          <p className="text-muted-foreground mt-10 text-center text-xs">
-            Internal tool — not for external use
+          <p className="text-muted-foreground mt-6 text-center text-sm">
+            Don&apos;t have an account?{" "}
+            <Link href="/signup" className="text-primary underline-offset-4 hover:underline">
+              Sign up
+            </Link>
           </p>
         </div>
       </div>
