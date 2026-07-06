@@ -91,7 +91,7 @@ export default async function IntegrationsPage() {
             </p>
             <div className="flex flex-col items-end gap-1.5">
               <ConnectWhatsAppEmbeddedButton />
-              <ConnectWhatsAppDialog />
+              {/* <ConnectWhatsAppDialog /> */}
             </div>
           </div>
           <WhatsAppAccountsList
