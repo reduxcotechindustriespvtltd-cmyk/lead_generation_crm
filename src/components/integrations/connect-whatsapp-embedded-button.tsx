@@ -111,9 +111,9 @@ export function ConnectWhatsAppEmbeddedButton() {
           extras: { setup: {} },
         }
       );
-    } catch {
+    } catch (error) {
       setIsConnecting(false);
-      toast.error("Failed to load Facebook SDK");
+      toast.error(error instanceof Error ? error.message : "Failed to load Facebook SDK");
     }
   }
 
