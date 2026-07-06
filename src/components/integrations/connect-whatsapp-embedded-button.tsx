@@ -108,7 +108,7 @@ export function ConnectWhatsAppEmbeddedButton() {
           config_id: config.configId,
           response_type: "code",
           override_default_response_type: true,
-          extras: { sessionInfoVersion: "3" },
+          extras: { setup: {} },
         }
       );
     } catch {
