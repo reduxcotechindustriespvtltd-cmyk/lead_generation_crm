@@ -48,61 +48,61 @@ export function ConnectWhatsAppDialog() {
     }
   }
 
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <button
-        type="button"
-        className="text-muted-foreground w-fit text-xs underline-offset-4 hover:underline"
-        onClick={() => setOpen(true)}
-      >
-        Or enter Phone Number ID / WABA ID / token manually
-      </button>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Connect a WhatsApp number</DialogTitle>
-          <DialogDescription>
-            From your Meta App&apos;s WhatsApp product setup — a System User access token with{" "}
-            <code>whatsapp_business_messaging</code> permission, and the Phone Number ID / WABA ID
-            shown on that page.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex flex-col gap-3">
-          <div className="space-y-1.5">
-            <Label>Phone Number ID</Label>
-            <Input
-              placeholder="1029384756"
-              value={form.phoneNumberId}
-              onChange={(e) => setForm({ ...form, phoneNumberId: e.target.value })}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>WhatsApp Business Account ID</Label>
-            <Input
-              placeholder="5647382910"
-              value={form.wabaId}
-              onChange={(e) => setForm({ ...form, wabaId: e.target.value })}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Access Token</Label>
-            <Input
-              type="password"
-              placeholder="EAAG..."
-              value={form.accessToken}
-              onChange={(e) => setForm({ ...form, accessToken: e.target.value })}
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-          <Button onClick={submit} disabled={isSubmitting || !canSubmit}>
-            {isSubmitting && <Loader2 className="animate-spin" />}
-            Connect
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
+  // return (
+  //   <Dialog open={open} onOpenChange={setOpen}>
+  //     <button
+  //       type="button"
+  //       className="text-muted-foreground w-fit text-xs underline-offset-4 hover:underline"
+  //       onClick={() => setOpen(true)}
+  //     >
+  //       Or enter Phone Number ID / WABA ID / token manually
+  //     </button>
+  //     <DialogContent>
+  //       <DialogHeader>
+  //         <DialogTitle>Connect a WhatsApp number</DialogTitle>
+  //         <DialogDescription>
+  //           From your Meta App&apos;s WhatsApp product setup — a System User access token with{" "}
+  //           <code>whatsapp_business_messaging</code> permission, and the Phone Number ID / WABA ID
+  //           shown on that page.
+  //         </DialogDescription>
+  //       </DialogHeader>
+  //       <div className="flex flex-col gap-3">
+  //         <div className="space-y-1.5">
+  //           <Label>Phone Number ID</Label>
+  //           <Input
+  //             placeholder="1029384756"
+  //             value={form.phoneNumberId}
+  //             onChange={(e) => setForm({ ...form, phoneNumberId: e.target.value })}
+  //           />
+  //         </div>
+  //         <div className="space-y-1.5">
+  //           <Label>WhatsApp Business Account ID</Label>
+  //           <Input
+  //             placeholder="5647382910"
+  //             value={form.wabaId}
+  //             onChange={(e) => setForm({ ...form, wabaId: e.target.value })}
+  //           />
+  //         </div>
+  //         <div className="space-y-1.5">
+  //           <Label>Access Token</Label>
+  //           <Input
+  //             type="password"
+  //             placeholder="EAAG..."
+  //             value={form.accessToken}
+  //             onChange={(e) => setForm({ ...form, accessToken: e.target.value })}
+  //           />
+  //         </div>
+  //       </div>
+  //       <DialogFooter>
+  //         <Button variant="outline" onClick={() => setOpen(false)}>
+  //           Cancel
+  //         </Button>
+  //         <Button onClick={submit} disabled={isSubmitting || !canSubmit}>
+  //           {isSubmitting && <Loader2 className="animate-spin" />}
+  //           Connect
+  //         </Button>
+  //       </DialogFooter>
+  //     </DialogContent>
+  //   </Dialog>
+  // );
 }
