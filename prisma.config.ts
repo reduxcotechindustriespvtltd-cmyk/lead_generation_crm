@@ -10,6 +10,14 @@ export default defineConfig({
     seed: "tsx prisma/seed.ts",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // Only used by the Prisma CLI (migrate/introspect/studio) — the running
+    // app connects independently via the @prisma/adapter-pg driver adapter in
+    // src/lib/db.ts, which reads DATABASE_URL directly and never touches this
+    // file. So this can safely point at a non-pooled connection: poolers like
+    // Neon's "-pooler" endpoint don't reliably support the advisory lock that
+    // `prisma migrate` takes, which was causing intermittent P1002 timeouts.
+    // Falls back to DATABASE_URL so this doesn't break setups with no pooler
+    // (e.g. self-hosted Postgres) where DIRECT_URL was never set.
+    url: process.env["DIRECT_URL"] || process.env["DATABASE_URL"],
   },
 });

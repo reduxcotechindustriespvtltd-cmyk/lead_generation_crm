@@ -13,14 +13,16 @@ export async function POST(request: NextRequest) {
     if (rateLimitResponse) return rateLimitResponse;
 
     const formData = await request.formData();
-    const { firstName, lastName, email, phone, password } = signupProfileSchema.parse({
+    const { firstName, lastName, email, countryCode, phone, password } = signupProfileSchema.parse({
       firstName: formData.get("firstName"),
       lastName: formData.get("lastName"),
       email: formData.get("email"),
+      countryCode: formData.get("countryCode") || undefined,
       phone: formData.get("phone") || undefined,
       password: formData.get("password"),
       confirmPassword: formData.get("confirmPassword"),
     });
+    const fullPhone = phone ? `${countryCode} ${phone}` : undefined;
 
     const existing = await db.user.findUnique({ where: { email } });
     if (existing) {
@@ -45,7 +47,7 @@ export async function POST(request: NextRequest) {
     const sessionToken = signSignupSession({
       name: `${firstName} ${lastName}`,
       email,
-      phone,
+      phone: fullPhone,
       passwordHash,
       avatarUrl,
       emailVerified: false,
