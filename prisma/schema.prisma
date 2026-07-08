@@ -69,17 +69,17 @@ model PendingSignup {
 }
 
 model User {
-  id             String        @id @default(cuid())
+  id             String   @id @default(cuid())
   name           String
-  email          String        @unique
+  email          String   @unique
   passwordHash   String
-  role           UserRole      @default(SALES_EXECUTIVE)
+  role           UserRole @default(SALES_EXECUTIVE)
   phone          String?
   avatarUrl      String?
-  isActive       Boolean       @default(true)
+  isActive       Boolean  @default(true)
   organizationId String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   organization Organization? @relation(fields: [organizationId], references: [id])
 
@@ -96,6 +96,7 @@ model User {
   connectedWhatsAppAccounts WhatsAppAccount[]
   assignmentRuleMembers     AssignmentRuleMember[]
   sentWhatsAppMessages      WhatsAppMessage[]
+  createdBookings           Booking[]              @relation("BookingCreatedBy")
 
   @@index([role])
   @@index([organizationId])
@@ -173,7 +174,7 @@ model WhatsAppAccount {
   createdAt          DateTime                 @default(now())
   updatedAt          DateTime                 @updatedAt
 
-  connectedBy User? @relation(fields: [connectedById], references: [id], onDelete: SetNull)
+  connectedBy User?             @relation(fields: [connectedById], references: [id], onDelete: SetNull)
   messages    WhatsAppMessage[]
 
   @@index([wabaId])
@@ -375,6 +376,7 @@ model Lead {
   activities       Activity[]
   followUps        FollowUp[]
   whatsAppMessages WhatsAppMessage[]
+  bookings         Booking[]
 
   @@index([statusId])
   @@index([assignedToId])
@@ -383,6 +385,62 @@ model Lead {
   @@index([createdAt])
   @@index([phone])
   @@map("leads")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Bookings — confirmed paying guests (optionally converted from a Lead)
+// ─────────────────────────────────────────────────────────────
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+model Booking {
+  id String @id @default(cuid())
+
+  guestName String
+  phone     String
+
+  checkInDate  DateTime
+  checkOutDate DateTime
+
+  adultCount  Int @default(1)
+  kidsCount   Int @default(0)
+  infantCount Int @default(0)
+
+  adultCostPerPerson Decimal @db.Decimal(12, 2)
+  kidsCostPerPerson  Decimal @default(0) @db.Decimal(12, 2)
+  vendorAmount       Decimal @default(0) @db.Decimal(12, 2)
+
+  // Server-computed on every create/update via calculateBookingFinancials() —
+  // never accepted directly from client input.
+  totalRevenue Decimal @db.Decimal(12, 2)
+  profit       Decimal @db.Decimal(12, 2)
+
+  status BookingStatus @default(CONFIRMED)
+
+  leadId String?
+  lead   Lead?   @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  // Optional attachment (payment screenshot / ID proof) — stored on local
+  // disk, not Vercel Blob, since this app is self-hosted via Docker.
+  attachmentPath     String?
+  attachmentName     String?
+  attachmentMimeType String?
+  attachmentSize     Int?
+
+  createdById String?
+  createdBy   User?    @relation("BookingCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([leadId])
+  @@index([checkInDate])
+  @@index([status])
+  @@index([createdAt])
+  @@index([phone])
+  @@map("bookings")
 }
 
 // ─────────────────────────────────────────────────────────────

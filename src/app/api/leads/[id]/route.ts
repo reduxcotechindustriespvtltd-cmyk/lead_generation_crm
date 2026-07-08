@@ -5,6 +5,7 @@ import { handleApiError, jsonError } from "@/lib/api-response";
 import { can } from "@/lib/auth/rbac";
 import { logActivity } from "@/lib/activity";
 import { getLeadDetail } from "@/lib/queries/leads";
+import { revalidateLeadDependents } from "@/lib/revalidate";
 import { updateLeadSchema } from "@/lib/validations/leads";
 
 function scopeFor(role: string, userId: string) {
@@ -104,6 +105,7 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/leads/[id]
       });
     }
 
+    revalidateLeadDependents();
     return NextResponse.json({ lead: updated });
   } catch (error) {
     return handleApiError(error);
@@ -118,6 +120,7 @@ export async function DELETE(_request: Request, ctx: RouteContext<"/api/leads/[i
     }
     const { id } = await ctx.params;
     await db.lead.delete({ where: { id } });
+    revalidateLeadDependents();
     return NextResponse.json({ success: true });
   } catch (error) {
     return handleApiError(error);

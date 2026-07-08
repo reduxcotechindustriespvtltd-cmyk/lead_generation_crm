@@ -41,3 +41,6 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# local-disk booking attachments (see src/lib/storage/local-file-storage.ts)
+/storage/uploads

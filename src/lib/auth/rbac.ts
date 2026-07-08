@@ -10,6 +10,7 @@ export const permissions = {
   manageMetaAccounts: (role: UserRole) => role === "ADMIN",
   viewFullAnalytics: (role: UserRole) => role === "ADMIN" || role === "MANAGER",
   exportLeads: (role: UserRole) => role === "ADMIN" || role === "MANAGER",
+  deleteBooking: (role: UserRole) => role === "ADMIN" || role === "MANAGER",
 };
 
 export type Permission = keyof typeof permissions;

@@ -26,6 +26,8 @@ services:
         condition: service_healthy
     env_file:
       - .env
+    volumes:
+      - gsb_crm_uploads:/app/storage/uploads
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
       interval: 15s
@@ -88,6 +90,7 @@ services:
 
 volumes:
   gsb_crm_pgdata:
+  gsb_crm_uploads:
   caddy_data:
   caddy_config:
 

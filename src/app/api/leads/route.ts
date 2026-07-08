@@ -5,6 +5,7 @@ import { handleApiError } from "@/lib/api-response";
 import { logActivity } from "@/lib/activity";
 import { getNextRoundRobinAssignee } from "@/lib/assignment";
 import { listLeads, type LeadScope } from "@/lib/queries/leads";
+import { revalidateLeadDependents } from "@/lib/revalidate";
 import { createLeadSchema, leadListQuerySchema } from "@/lib/validations/leads";
 
 function scopeFor(role: string, userId: string): LeadScope {
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    revalidateLeadDependents();
     return NextResponse.json({ lead }, { status: 201 });
   } catch (error) {
     return handleApiError(error);

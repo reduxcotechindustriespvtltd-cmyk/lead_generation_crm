@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { requireRole } from "@/lib/auth/session";
 import { handleApiError } from "@/lib/api-response";
 import { logActivity } from "@/lib/activity";
+import { revalidateLeadDependents } from "@/lib/revalidate";
 import { bulkAssignSchema } from "@/lib/validations/leads";
 
 export async function POST(request: NextRequest) {
@@ -40,6 +41,7 @@ export async function POST(request: NextRequest) {
       )
     );
 
+    revalidateLeadDependents();
     return NextResponse.json({ success: true, count: leadIds.length });
   } catch (error) {
     return handleApiError(error);

@@ -2,6 +2,7 @@ import {
   LayoutDashboard,
   Users2,
   CalendarClock,
+  CalendarCheck2,
   BarChart3,
   UserCog,
   Plug,
@@ -22,6 +23,7 @@ export const navItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/leads", label: "Leads", icon: Users2 },
   { href: "/dashboard/follow-ups", label: "Follow-ups", icon: CalendarClock },
+  { href: "/dashboard/bookings", label: "Bookings", icon: CalendarCheck2 },
   {
     href: "/dashboard/analytics",
     label: "Analytics",

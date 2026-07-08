@@ -34,6 +34,12 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 
+# Local-disk booking attachments live outside public/ and .next/ so they
+# survive redeploys via the gsb_crm_uploads volume (see docker-compose.prod.yml).
+# Docker only seeds a named volume's ownership from the image on first
+# creation, so this must be set up before switching to the non-root user.
+RUN mkdir -p /app/storage/uploads && chown -R nextjs:nodejs /app/storage
+
 USER nextjs
 EXPOSE 3000
 
