@@ -1,11 +1,88 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2 } from "lucide-react";
+import { Building2, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { visibleNavItems } from "@/components/layout/nav-items";
+import { visibleNavItems, type NavItem } from "@/components/layout/nav-items";
 import type { UserRole } from "@/generated/prisma/client";
+
+function isItemActive(pathname: string, href: string) {
+  return href === "/dashboard" ? pathname === href : pathname.startsWith(href);
+}
+
+function NavLink({
+  item,
+  isActive,
+  onNavigate,
+  indent,
+}: {
+  item: NavItem;
+  isActive: boolean;
+  onNavigate?: () => void;
+  indent?: boolean;
+}) {
+  return (
+    <Link
+      href={item.href}
+      onClick={onNavigate}
+      className={cn(
+        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
+        indent && "ml-3",
+        isActive
+          ? "bg-primary text-primary-foreground shadow-sm"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+      )}
+    >
+      <item.icon className="size-4 shrink-0" />
+      {item.label}
+    </Link>
+  );
+}
+
+function NavGroup({
+  item,
+  pathname,
+  onNavigate,
+}: {
+  item: NavItem & { children: NavItem[] };
+  pathname: string;
+  onNavigate?: () => void;
+}) {
+  const hasActiveChild = item.children.some((child) => isItemActive(pathname, child.href));
+  const [open, setOpen] = useState(hasActiveChild);
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={cn(
+          "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
+          "text-muted-foreground hover:bg-muted hover:text-foreground"
+        )}
+      >
+        <item.icon className="size-4 shrink-0" />
+        <span className="flex-1 text-left">{item.label}</span>
+        <ChevronDown className={cn("size-4 shrink-0 transition-transform", open && "rotate-180")} />
+      </button>
+      {open && (
+        <div className="mt-1 space-y-1">
+          {item.children.map((child) => (
+            <NavLink
+              key={child.href}
+              item={child}
+              isActive={isItemActive(pathname, child.href)}
+              onNavigate={onNavigate}
+              indent
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function SidebarNav({
   role,
@@ -38,26 +115,23 @@ export function SidebarNav({
         </div>
       </div>
       <nav className="flex-1 space-y-1 px-3">
-        {items.map((item) => {
-          const isActive =
-            item.href === "/dashboard" ? pathname === item.href : pathname.startsWith(item.href);
-          return (
-            <Link
+        {items.map((item) =>
+          item.children ? (
+            <NavGroup
               key={item.href}
-              href={item.href}
-              onClick={onNavigate}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
-                isActive
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              )}
-            >
-              <item.icon className="size-4 shrink-0" />
-              {item.label}
-            </Link>
-          );
-        })}
+              item={item as NavItem & { children: NavItem[] }}
+              pathname={pathname}
+              onNavigate={onNavigate}
+            />
+          ) : (
+            <NavLink
+              key={item.href}
+              item={item}
+              isActive={isItemActive(pathname, item.href)}
+              onNavigate={onNavigate}
+            />
+          )
+        )}
       </nav>
       <div className="text-muted-foreground border-t p-3 text-xs">Internal tool</div>
     </div>

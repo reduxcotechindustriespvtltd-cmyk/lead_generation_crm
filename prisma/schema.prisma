@@ -626,6 +626,80 @@ model AuditLog {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Public site content — admin-managed source of truth for the
+// gsb-holidays marketing site (Packages/Gallery/Testimonials pages),
+// pulled by that site's public read-only API.
+// ─────────────────────────────────────────────────────────────
+
+model Package {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  type        String
+  price       Decimal  @db.Decimal(12, 2)
+  priceUnit   String   @default("per night")
+  maxGuests   Int      @default(2)
+  description String
+  amenities   String[] @default([])
+  imagePath   String
+  // A YouTube/Vimeo link or direct video file URL — not stored in Tigris like
+  // images, since serving large video well needs HTTP Range support the file
+  // route doesn't have. gsb-holidays embeds it (iframe or <video>) as-is.
+  videoUrl    String?
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  images PackageImage[]
+
+  @@index([isActive])
+  @@map("packages")
+}
+
+// Additional gallery images for a package's detail page, beyond its single
+// cover image (Package.imagePath, used for card thumbnails/listings).
+model PackageImage {
+  id        String   @id @default(cuid())
+  packageId String
+  imagePath String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  package Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@index([packageId])
+  @@map("package_images")
+}
+
+model GalleryImage {
+  id        String   @id @default(cuid())
+  imagePath String
+  caption   String?
+  isActive  Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([isActive])
+  @@map("gallery_images")
+}
+
+model Testimonial {
+  id        String   @id @default(cuid())
+  name      String
+  location  String
+  rating    Int      @default(5)
+  quote     String
+  isActive  Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("testimonials")
+}
+
+// ─────────────────────────────────────────────────────────────
 // White-label branding — a single row per deployed instance.
 // Each client gets their own isolated instance, so this is a
 // singleton rather than per-tenant, unlike everything else here.
