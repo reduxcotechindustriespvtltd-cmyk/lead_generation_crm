@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api-response";
-import { readS3File } from "@/lib/storage/s3-file-storage";
+import { readSupabaseFile, SupabaseFileNotFoundError } from "@/lib/storage/supabase-file-storage";
 
 // Public counterpart of /api/files/[...path]: unauthenticated, but only ever
 // serves the subdirs used for public marketing content (stored in Tigris) —
@@ -16,7 +16,7 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/public/file
 
   try {
     const key = segments.join("/");
-    const { buffer, contentType } = await readS3File(key);
+    const { buffer, contentType } = await readSupabaseFile(key);
 
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
@@ -25,7 +25,7 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/public/file
       },
     });
   } catch (error) {
-    if (error instanceof Error && error.name === "NoSuchKey") {
+    if (error instanceof SupabaseFileNotFoundError) {
       return jsonError("File not found", 404);
     }
     return jsonError("Internal server error", 500);

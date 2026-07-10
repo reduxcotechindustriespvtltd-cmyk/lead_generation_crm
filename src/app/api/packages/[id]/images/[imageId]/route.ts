@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireRole } from "@/lib/auth/session";
 import { handleApiError, jsonError } from "@/lib/api-response";
-import { deleteS3File } from "@/lib/storage/s3-file-storage";
+import { deleteSupabaseFile } from "@/lib/storage/supabase-file-storage";
 
 export async function DELETE(
   _request: Request,
@@ -16,7 +16,7 @@ export async function DELETE(
     if (!image || image.packageId !== id) return jsonError("Image not found", 404);
 
     await db.packageImage.delete({ where: { id: imageId } });
-    await deleteS3File(image.imagePath);
+    await deleteSupabaseFile(image.imagePath);
 
     return NextResponse.json({ success: true });
   } catch (error) {

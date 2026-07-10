@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { requireRole } from "@/lib/auth/session";
 import { handleApiError, jsonError } from "@/lib/api-response";
 import { listGalleryImages, nextGalleryOrder } from "@/lib/queries/gallery";
-import { InvalidFileUploadError, saveS3File } from "@/lib/storage/s3-file-storage";
+import { InvalidFileUploadError, saveSupabaseFile } from "@/lib/storage/supabase-file-storage";
 import { createGallerySchema } from "@/lib/validations/gallery";
 
 export async function GET() {
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
     let image: { path: string; mimeType: string };
     try {
-      image = await saveS3File(file, "gallery");
+      image = await saveSupabaseFile(file, "gallery");
     } catch (error) {
       if (error instanceof InvalidFileUploadError) {
         return jsonError(error.message, 400);

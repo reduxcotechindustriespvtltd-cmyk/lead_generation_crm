@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireRole } from "@/lib/auth/session";
 import { handleApiError, jsonError } from "@/lib/api-response";
-import { deleteS3File, InvalidFileUploadError, saveS3File } from "@/lib/storage/s3-file-storage";
+import { deleteSupabaseFile, InvalidFileUploadError, saveSupabaseFile } from "@/lib/storage/supabase-file-storage";
 import { updatePackageSchema } from "@/lib/validations/packages";
 
 export async function PATCH(request: Request, ctx: RouteContext<"/api/packages/[id]">) {
@@ -31,8 +31,8 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/packages/[
     const file = formData.get("image");
     if (file instanceof File && file.size > 0) {
       try {
-        const image = await saveS3File(file, "packages");
-        await deleteS3File(existing.imagePath);
+        const image = await saveSupabaseFile(file, "packages");
+        await deleteSupabaseFile(existing.imagePath);
         imageFields = { imagePath: image.path };
       } catch (error) {
         if (error instanceof InvalidFileUploadError) {
@@ -63,8 +63,8 @@ export async function DELETE(_request: Request, ctx: RouteContext<"/api/packages
     if (!existing) return jsonError("Package not found", 404);
 
     await db.package.delete({ where: { id } });
-    await deleteS3File(existing.imagePath);
-    await Promise.all(existing.images.map((img) => deleteS3File(img.imagePath)));
+    await deleteSupabaseFile(existing.imagePath);
+    await Promise.all(existing.images.map((img) => deleteSupabaseFile(img.imagePath)));
 
     return NextResponse.json({ success: true });
   } catch (error) {

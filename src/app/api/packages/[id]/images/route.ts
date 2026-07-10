@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireRole } from "@/lib/auth/session";
 import { handleApiError, jsonError } from "@/lib/api-response";
-import { InvalidFileUploadError, saveS3File } from "@/lib/storage/s3-file-storage";
+import { InvalidFileUploadError, saveSupabaseFile } from "@/lib/storage/supabase-file-storage";
 
 // Adds one or more gallery images to an existing package, independent of the
 // cover image managed by PATCH /api/packages/[id] — lets the admin UI add
@@ -31,7 +31,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/packages/[i
     for (const file of files) {
       let uploaded: { path: string };
       try {
-        uploaded = await saveS3File(file, "packages");
+        uploaded = await saveSupabaseFile(file, "packages");
       } catch (error) {
         if (error instanceof InvalidFileUploadError) {
           return jsonError(error.message, 400);

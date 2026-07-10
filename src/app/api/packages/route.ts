@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { requireRole } from "@/lib/auth/session";
 import { handleApiError, jsonError } from "@/lib/api-response";
 import { listPackages, generateUniquePackageSlug } from "@/lib/queries/packages";
-import { InvalidFileUploadError, saveS3File } from "@/lib/storage/s3-file-storage";
+import { InvalidFileUploadError, saveSupabaseFile } from "@/lib/storage/supabase-file-storage";
 import { createPackageSchema } from "@/lib/validations/packages";
 
 export async function GET() {
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     let image: { path: string; mimeType: string };
     try {
-      image = await saveS3File(file, "packages");
+      image = await saveSupabaseFile(file, "packages");
     } catch (error) {
       if (error instanceof InvalidFileUploadError) {
         return jsonError(error.message, 400);
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     const galleryImages: { path: string }[] = [];
     try {
       for (const galleryFile of galleryFiles) {
-        galleryImages.push(await saveS3File(galleryFile, "packages"));
+        galleryImages.push(await saveSupabaseFile(galleryFile, "packages"));
       }
     } catch (error) {
       if (error instanceof InvalidFileUploadError) {
