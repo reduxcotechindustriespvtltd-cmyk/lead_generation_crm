@@ -15,6 +15,8 @@ type OrgSettings = {
   primaryColor: string;
   secondaryColor: string;
   supportEmail: string | null;
+  primaryPhone: string | null;
+  secondaryPhone: string | null;
 };
 
 export function BrandingSettings({ settings }: { settings: OrgSettings }) {
@@ -25,6 +27,8 @@ export function BrandingSettings({ settings }: { settings: OrgSettings }) {
     primaryColor: settings.primaryColor,
     secondaryColor: settings.secondaryColor,
     supportEmail: settings.supportEmail ?? "",
+    primaryPhone: settings.primaryPhone ?? "",
+    secondaryPhone: settings.secondaryPhone ?? "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -96,6 +100,22 @@ export function BrandingSettings({ settings }: { settings: OrgSettings }) {
               placeholder="support@yourcompany.com"
               value={form.supportEmail}
               onChange={(e) => setForm({ ...form, supportEmail: e.target.value })}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Primary Phone</Label>
+            <Input
+              placeholder="+91 84529 89850"
+              value={form.primaryPhone}
+              onChange={(e) => setForm({ ...form, primaryPhone: e.target.value })}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Secondary Phone (optional)</Label>
+            <Input
+              placeholder="+91 84259 35850"
+              value={form.secondaryPhone}
+              onChange={(e) => setForm({ ...form, secondaryPhone: e.target.value })}
             />
           </div>
           <div className="space-y-1.5">

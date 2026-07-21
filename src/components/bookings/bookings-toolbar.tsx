@@ -15,10 +15,17 @@ import {
 import { BookingFormDialog } from "@/components/bookings/booking-form-dialog";
 
 type LeadOption = { id: string; fullName: string };
+type PackageOption = { id: string; name: string; destination: string | null };
 
 const ALL = "__all__";
 
-export function BookingsToolbar({ leads }: { leads: LeadOption[] }) {
+export function BookingsToolbar({
+  leads,
+  packages,
+}: {
+  leads: LeadOption[];
+  packages: PackageOption[];
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -88,7 +95,13 @@ export function BookingsToolbar({ leads }: { leads: LeadOption[] }) {
         <Plus />
         Add Booking
       </Button>
-      <BookingFormDialog mode="create" leads={leads} open={addOpen} onOpenChange={setAddOpen} />
+      <BookingFormDialog
+        mode="create"
+        leads={leads}
+        packages={packages}
+        open={addOpen}
+        onOpenChange={setAddOpen}
+      />
     </div>
   );
 }

@@ -37,6 +37,7 @@ import { LeadStatusBadge } from "@/components/leads/lead-status-badge";
 import { cn } from "@/lib/utils";
 
 type LeadOption = { id: string; fullName: string };
+type PackageOption = { id: string; name: string; destination: string | null };
 
 function SortHeader({
   field,
@@ -70,6 +71,7 @@ type BookingTableRow = BookingRow & {
 export function BookingsTable({
   bookings,
   leads,
+  packages,
   total,
   page,
   pageSize,
@@ -80,6 +82,7 @@ export function BookingsTable({
 }: {
   bookings: BookingTableRow[];
   leads: LeadOption[];
+  packages: PackageOption[];
   total: number;
   page: number;
   pageSize: number;
@@ -153,6 +156,7 @@ export function BookingsTable({
                 />
               </TableHead>
               <TableHead>Check-out</TableHead>
+              <TableHead>Package</TableHead>
               <TableHead>Guests</TableHead>
               <TableHead>
                 <SortHeader
@@ -172,7 +176,7 @@ export function BookingsTable({
           <TableBody>
             {bookings.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="h-40 text-center">
+                <TableCell colSpan={10} className="h-40 text-center">
                   {hasActiveFilters ? (
                     <EmptyState
                       icon={SearchX}
@@ -204,6 +208,7 @@ export function BookingsTable({
                     </TableCell>
                     <TableCell className="text-sm">{formatDate(booking.checkInDate)}</TableCell>
                     <TableCell className="text-sm">{formatDate(booking.checkOutDate)}</TableCell>
+                    <TableCell className="text-sm">{booking.packageName ?? "—"}</TableCell>
                     <TableCell className="text-sm">
                       {booking.adultCount}A
                       {booking.kidsCount > 0 ? ` · ${booking.kidsCount}K` : ""}
@@ -310,6 +315,7 @@ export function BookingsTable({
           mode="edit"
           booking={editing}
           leads={leads}
+          packages={packages}
           open={!!editing}
           onOpenChange={(v) => !v && setEditing(null)}
         />

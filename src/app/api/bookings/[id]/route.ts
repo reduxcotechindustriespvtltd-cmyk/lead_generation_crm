@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireUser } from "@/lib/auth/session";
+import { requireRole, requireUser } from "@/lib/auth/session";
 import { handleApiError, jsonError } from "@/lib/api-response";
 import { can } from "@/lib/auth/rbac";
 import { calculateBookingFinancials } from "@/lib/booking-financials";
@@ -14,7 +14,7 @@ import { updateBookingSchema } from "@/lib/validations/bookings";
 
 export async function GET(_request: Request, ctx: RouteContext<"/api/bookings/[id]">) {
   try {
-    await requireUser();
+    await requireRole("ADMIN", "MANAGER");
     const { id } = await ctx.params;
     const booking = await getBookingDetail(id);
     if (!booking) return jsonError("Booking not found", 404);
@@ -26,7 +26,7 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/bookings/[i
 
 export async function PATCH(request: Request, ctx: RouteContext<"/api/bookings/[id]">) {
   try {
-    await requireUser();
+    await requireRole("ADMIN", "MANAGER");
     const { id } = await ctx.params;
 
     const existing = await db.booking.findUnique({ where: { id } });
@@ -46,8 +46,15 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/bookings/[
       vendorAmount: formData.get("vendorAmount") || undefined,
       status: formData.get("status") || undefined,
       leadId: formData.has("leadId") ? formData.get("leadId") || "" : undefined,
+      packageId: formData.has("packageId") ? formData.get("packageId") || "" : undefined,
       removeAttachment: formData.get("removeAttachment") || undefined,
     });
+
+    // Snapshot the package name/destination at update time — only re-resolve
+    // when packageId was actually part of this request.
+    const linkedPackage = input.packageId
+      ? await db.package.findUnique({ where: { id: input.packageId } })
+      : null;
 
     // Recompute from the merged existing+incoming values so a partial update
     // (e.g. only vendorAmount changing) still recalculates correctly.
@@ -102,6 +109,9 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/bookings/[
         vendorAmount: input.vendorAmount,
         status: input.status,
         leadId: input.leadId === "" ? null : input.leadId,
+        packageId: input.packageId,
+        packageName: linkedPackage?.name,
+        destination: linkedPackage?.destination,
         totalRevenue,
         profit,
         ...attachmentFields,

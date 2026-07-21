@@ -33,12 +33,24 @@ export async function POST(request: NextRequest) {
 
     const assignedToId = await getNextRoundRobinAssignee();
 
+    // The website's contact form sends the package as a slug (e.g.
+    // "gsb-royal-villa"), not a friendly name — resolve it against the
+    // Package table so the lead shows a real name, not a raw slug, and can
+    // be joined for earnings reporting. Fall back to the raw value verbatim
+    // if it doesn't match any known package (deleted/renamed package, or a
+    // free-text "not sure yet" case).
+    const matchedPackage = input.package
+      ? await db.package.findUnique({ where: { slug: input.package } })
+      : null;
+    const packageInterest = matchedPackage?.name ?? input.package;
+
     const lead = await db.lead.create({
       data: {
         fullName: input.name,
         phone: input.phone,
         email: input.email,
-        campaignName: input.package,
+        packageId: matchedPackage?.id,
+        packageInterest,
         source: "WEBSITE",
         statusId: defaultStatus.id,
         assignedToId,
@@ -49,7 +61,7 @@ export async function POST(request: NextRequest) {
       input.checkIn ? `Check-in: ${input.checkIn}` : null,
       input.checkOut ? `Check-out: ${input.checkOut}` : null,
       input.guests ? `Guests: ${input.guests}` : null,
-      input.package ? `Package: ${input.package}` : null,
+      packageInterest ? `Package: ${packageInterest}` : null,
     ]
       .filter(Boolean)
       .join(", ");

@@ -347,6 +347,13 @@ model Lead {
   adSetName    String?
   formName     String?
 
+  // Which package this lead is interested in (from the gsb-holidays contact
+  // form's package selector). packageInterest is a denormalized snapshot of
+  // the package name at capture time — same rationale as campaignName above,
+  // so it survives a package being renamed/deleted later.
+  packageId       String?
+  packageInterest String?
+
   source     LeadSource @default(MANUAL)
   metaLeadId String?    @unique // Meta's leadgen_id, used for dedup
   rawPayload Json? // full original payload from Meta webhook/API
@@ -366,6 +373,7 @@ model Lead {
   adSet       AdSet?     @relation(fields: [adSetId], references: [id], onDelete: SetNull)
   ad          Ad?        @relation(fields: [adId], references: [id], onDelete: SetNull)
   form        LeadForm?  @relation(fields: [formId], references: [id], onDelete: SetNull)
+  package     Package?   @relation(fields: [packageId], references: [id], onDelete: SetNull)
   status      LeadStatus @relation(fields: [statusId], references: [id])
   assignedTo  User?      @relation("LeadAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
   createdBy   User?      @relation("LeadCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
@@ -382,6 +390,7 @@ model Lead {
   @@index([assignedToId])
   @@index([source])
   @@index([campaignId])
+  @@index([packageId])
   @@index([createdAt])
   @@index([phone])
   @@map("leads")
@@ -423,6 +432,15 @@ model Booking {
   leadId String?
   lead   Lead?   @relation(fields: [leadId], references: [id], onDelete: SetNull)
 
+  // Which package/destination this stay is for. packageName/destination are
+  // a denormalized snapshot at booking time (same rationale as Lead's
+  // campaignName snapshot) so earnings reporting survives a package being
+  // renamed or deleted later.
+  packageId   String?
+  package     Package? @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  packageName String?
+  destination String?
+
   // Optional attachment (payment screenshot / ID proof) — stored on local
   // disk, not Vercel Blob, since this app is self-hosted via Docker.
   attachmentPath     String?
@@ -436,6 +454,7 @@ model Booking {
   updatedAt   DateTime @updatedAt
 
   @@index([leadId])
+  @@index([packageId])
   @@index([checkInDate])
   @@index([status])
   @@index([createdAt])
@@ -636,6 +655,10 @@ model Package {
   slug        String   @unique
   name        String
   type        String
+  // Free-text destination (e.g. "Lonavala", "Karjat") rather than an enum,
+  // so ops can add destinations without a migration — mirrors the same
+  // handful of destinations used on the gsb-holidays site's nav/filters.
+  destination String?
   price       Decimal  @db.Decimal(12, 2)
   priceUnit   String   @default("per night")
   maxGuests   Int      @default(2)
@@ -651,7 +674,9 @@ model Package {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  images PackageImage[]
+  images   PackageImage[]
+  leads    Lead[]
+  bookings Booking[]
 
   @@index([isActive])
   @@map("packages")
@@ -712,6 +737,10 @@ model OrgSettings {
   primaryColor   String   @default("#c2410c")
   secondaryColor String   @default("#0d9488")
   supportEmail   String?
+  // Independent public contact numbers shown on the gsb-holidays site —
+  // separate columns so editing one can never clobber the other.
+  primaryPhone   String?
+  secondaryPhone String?
   updatedAt      DateTime @updatedAt
 
   @@map("org_settings")

@@ -24,14 +24,17 @@ import { Label } from "@/components/ui/label";
 import { LeadStatusBadge } from "@/components/leads/lead-status-badge";
 import { SourceBadge } from "@/components/leads/source-badge";
 
-type Option = { id: string; name: string };
 type StatusOption = { id: string; name: string; color: string };
+
+// No photo upload for leads — an initials avatar is the pragmatic default.
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/);
+  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase();
+}
 
 export function LeadHeader({
   lead,
   statuses,
-  users,
-  canReassign,
 }: {
   lead: {
     id: string;
@@ -43,14 +46,13 @@ export function LeadHeader({
     statusId: string;
     assignedTo: { id: string; name: string } | null;
     source: string;
+    packageInterest: string | null;
     campaignName: string | null;
     adSetName: string | null;
     adName: string | null;
     formName: string | null;
   };
   statuses: StatusOption[];
-  users: Option[];
-  canReassign: boolean;
 }) {
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
@@ -91,21 +93,26 @@ export function LeadHeader({
   return (
     <div className="bg-card flex flex-col gap-4 rounded-lg border p-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-semibold">{lead.fullName}</h1>
-            <Button variant="ghost" size="icon-sm" onClick={() => setEditOpen(true)}>
-              <Pencil className="size-3.5" />
-            </Button>
+        <div className="flex items-start gap-3">
+          <div className="bg-muted text-muted-foreground flex size-11 shrink-0 items-center justify-center rounded-full text-sm font-semibold">
+            {initials(lead.fullName)}
           </div>
-          <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-3 text-sm">
-            <SourceBadge source={lead.source} />
-            {lead.city && (
-              <span>
-                {lead.city}
-                {lead.state ? `, ${lead.state}` : ""}
-              </span>
-            )}
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-semibold">{lead.fullName}</h1>
+              <Button variant="ghost" size="icon-sm" onClick={() => setEditOpen(true)}>
+                <Pencil className="size-3.5" />
+              </Button>
+            </div>
+            <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-3 text-sm">
+              <SourceBadge source={lead.source} />
+              {lead.city && (
+                <span>
+                  {lead.city}
+                  {lead.state ? `, ${lead.state}` : ""}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -130,30 +137,9 @@ export function LeadHeader({
             </SelectContent>
           </Select>
 
-          {canReassign ? (
-            <Select
-              value={lead.assignedTo?.id ?? "unassigned"}
-              onValueChange={(v) => patch({ assignedToId: v === "unassigned" ? null : v })}
-            >
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Unassigned">
-                  {lead.assignedTo?.name ?? "Unassigned"}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="unassigned">Unassigned</SelectItem>
-                {users.map((u) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    {u.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : (
-            <span className="text-muted-foreground text-sm">
-              {lead.assignedTo?.name ?? "Unassigned"}
-            </span>
-          )}
+          <span className="text-muted-foreground text-sm">
+            {lead.assignedTo?.name ?? "Unassigned"}
+          </span>
         </div>
       </div>
 
@@ -194,6 +180,13 @@ export function LeadHeader({
           </Button>
         )}
       </div>
+
+      {lead.packageInterest && (
+        <div className="border-t pt-4 text-sm">
+          <p className="text-muted-foreground text-xs">Package</p>
+          <p className="truncate font-medium">{lead.packageInterest}</p>
+        </div>
+      )}
 
       {(lead.campaignName || lead.adSetName || lead.adName || lead.formName) && (
         <div className="grid grid-cols-2 gap-3 border-t pt-4 text-sm sm:grid-cols-4">

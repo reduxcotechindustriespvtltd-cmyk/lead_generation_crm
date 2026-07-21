@@ -13,11 +13,18 @@ const logoUrl = z.union([
   z.literal(""),
 ]);
 
+const displayPhone = z.union([z.string().trim().max(30), z.literal("")]);
+
 export const updateOrgSettingsSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(60),
   logoUrl,
   primaryColor: hexColor,
   secondaryColor: hexColor,
   supportEmail: z.union([z.string().trim().email("Must be a valid email"), z.literal("")]),
+  // Two independent public contact numbers shown on the gsb-holidays site —
+  // separate fields end-to-end (schema, DB columns, form inputs) so editing
+  // one can never overwrite the other.
+  primaryPhone: displayPhone,
+  secondaryPhone: displayPhone,
 });
 export type UpdateOrgSettingsInput = z.infer<typeof updateOrgSettingsSchema>;

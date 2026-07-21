@@ -37,12 +37,10 @@ export function LeadsToolbar({
   statuses,
   users,
   showAssigneeFilter,
-  canAssign,
 }: {
   statuses: Option[];
   users: Option[];
   showAssigneeFilter: boolean;
-  canAssign: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -186,7 +184,7 @@ export function LeadsToolbar({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <AddLeadDialog statuses={statuses} users={users} canAssign={canAssign} />
+        <AddLeadDialog statuses={statuses} />
       </div>
     </div>
   );

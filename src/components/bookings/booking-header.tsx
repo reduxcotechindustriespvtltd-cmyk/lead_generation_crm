@@ -10,10 +10,12 @@ import { BookingFormDialog, type BookingRow } from "@/components/bookings/bookin
 import { LeadStatusBadge } from "@/components/leads/lead-status-badge";
 
 type LeadOption = { id: string; fullName: string };
+type PackageOption = { id: string; name: string; destination: string | null };
 
 export function BookingHeader({
   booking,
   leads,
+  packages,
   canDelete,
 }: {
   booking: BookingRow & {
@@ -25,6 +27,7 @@ export function BookingHeader({
     } | null;
   };
   leads: LeadOption[];
+  packages: PackageOption[];
   canDelete: boolean;
 }) {
   const router = useRouter();
@@ -132,6 +135,15 @@ export function BookingHeader({
             ₹{Number(booking.profit).toLocaleString("en-IN")}
           </p>
         </div>
+        {booking.packageName && (
+          <div>
+            <p className="text-muted-foreground text-xs">Package</p>
+            <p className="font-medium">
+              {booking.packageName}
+              {booking.destination ? ` — ${booking.destination}` : ""}
+            </p>
+          </div>
+        )}
         {booking.lead && (
           <div>
             <p className="text-muted-foreground text-xs">Linked Lead</p>
@@ -166,6 +178,7 @@ export function BookingHeader({
         mode="edit"
         booking={booking}
         leads={leads}
+        packages={packages}
         open={editOpen}
         onOpenChange={setEditOpen}
       />

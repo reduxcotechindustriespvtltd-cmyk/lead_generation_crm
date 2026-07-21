@@ -13,12 +13,17 @@ export default async function BookingDetailPage({
   const { id } = await params;
   const session = await getCurrentUser();
 
-  const [booking, leads] = await Promise.all([
+  const [booking, leads, packages] = await Promise.all([
     getBookingDetail(id),
     db.lead.findMany({
       select: { id: true, fullName: true },
       orderBy: { fullName: "asc" },
       take: 500,
+    }),
+    db.package.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true, destination: true },
+      orderBy: { order: "asc" },
     }),
   ]);
 
@@ -43,11 +48,15 @@ export default async function BookingDetailPage({
           profit: booking.profit.toString(),
           status: booking.status,
           leadId: booking.leadId,
+          packageId: booking.packageId,
+          packageName: booking.packageName,
+          destination: booking.destination,
           attachmentPath: booking.attachmentPath,
           attachmentName: booking.attachmentName,
           lead: booking.lead,
         }}
         leads={leads}
+        packages={packages}
         canDelete={can(session.role, "deleteBooking")}
       />
     </div>

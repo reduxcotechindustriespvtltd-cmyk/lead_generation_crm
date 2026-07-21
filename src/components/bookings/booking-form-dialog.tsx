@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/select";
 
 type LeadOption = { id: string; fullName: string };
+type PackageOption = { id: string; name: string; destination: string | null };
 
 export type BookingRow = {
   id: string;
@@ -52,6 +53,9 @@ export type BookingRow = {
   profit: string;
   status: "CONFIRMED" | "CANCELLED";
   leadId: string | null;
+  packageId: string | null;
+  packageName: string | null;
+  destination: string | null;
   attachmentPath: string | null;
   attachmentName: string | null;
 };
@@ -85,12 +89,14 @@ export function BookingFormDialog({
   mode,
   booking,
   leads,
+  packages,
   open,
   onOpenChange,
 }: {
   mode: "create" | "edit";
   booking?: BookingRow;
   leads: LeadOption[];
+  packages: PackageOption[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -115,6 +121,7 @@ export function BookingFormDialog({
           vendorAmount: Number(booking.vendorAmount),
           status: booking.status,
           leadId: booking.leadId ?? "",
+          packageId: booking.packageId ?? "",
         }
       : {
           guestName: "",
@@ -127,6 +134,7 @@ export function BookingFormDialog({
           vendorAmount: 0,
           status: "CONFIRMED",
           leadId: "",
+          packageId: "",
         },
   });
 
@@ -163,6 +171,7 @@ export function BookingFormDialog({
       formData.set("vendorAmount", String(values.vendorAmount));
       formData.set("status", values.status);
       if (values.leadId) formData.set("leadId", values.leadId);
+      if (values.packageId) formData.set("packageId", values.packageId);
       if (file) formData.set("attachment", file);
       if (mode === "edit" && removeAttachment) formData.set("removeAttachment", "true");
 
@@ -393,6 +402,41 @@ export function BookingFormDialog({
                         onChange={(e) => field.onChange(e.target.valueAsNumber)}
                       />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="packageId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Package</FormLabel>
+                    <Select
+                      value={field.value || "none"}
+                      onValueChange={(v) => field.onChange(v === "none" ? "" : v)}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="None">
+                            {(v: string) =>
+                              v === "none"
+                                ? "None"
+                                : (packages.find((p) => p.id === v)?.name ?? "None")
+                            }
+                          </SelectValue>
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {packages.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.name}
+                            {p.destination ? ` — ${p.destination}` : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

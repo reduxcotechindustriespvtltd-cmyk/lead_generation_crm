@@ -36,7 +36,7 @@ export default async function LeadsPage({
     email: lead.email,
     city: lead.city,
     state: lead.state,
-    campaignName: lead.campaignName,
+    packageInterest: lead.packageInterest,
     source: lead.source,
     createdAt: lead.createdAt.toISOString(),
     followUpDate: lead.followUpDate ? lead.followUpDate.toISOString() : null,
@@ -58,21 +58,17 @@ export default async function LeadsPage({
         statuses={statuses}
         users={users}
         showAssigneeFilter={role !== "SALES_EXECUTIVE"}
-        canAssign={can(role, "reassignLeads")}
       />
 
       <LeadsTable
         leads={leads}
         statuses={statuses}
-        users={users}
         total={result.total}
         page={result.page}
         pageSize={result.pageSize}
         totalPages={result.totalPages}
         sortBy={query.sortBy}
         sortDir={query.sortDir}
-        canReassign={can(role, "reassignLeads")}
-        canBulkAssign={can(role, "bulkAssignLeads")}
         canDelete={can(role, "deleteLead")}
       />
     </div>

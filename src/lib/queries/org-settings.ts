@@ -17,6 +17,8 @@ export async function getOrgSettings() {
       primaryColor: process.env.ORG_PRIMARY_COLOR || "#c2410c",
       secondaryColor: process.env.ORG_SECONDARY_COLOR || "#0d9488",
       supportEmail: process.env.ORG_SUPPORT_EMAIL || null,
+      primaryPhone: process.env.ORG_PRIMARY_PHONE || null,
+      secondaryPhone: process.env.ORG_SECONDARY_PHONE || null,
     },
   });
 }

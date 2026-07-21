@@ -4,6 +4,7 @@ import {
   CalendarClock,
   CalendarCheck2,
   BarChart3,
+  IndianRupee,
   UserCog,
   Plug,
   Settings,
@@ -33,7 +34,12 @@ export const navItems: NavItem[] = [
     label: "Admin",
     icon: ShieldCheck,
     children: [
-      { href: "/dashboard/bookings", label: "Bookings", icon: CalendarCheck2 },
+      {
+        href: "/dashboard/bookings",
+        label: "Bookings",
+        icon: CalendarCheck2,
+        roles: ["ADMIN", "MANAGER"],
+      },
       {
         href: "/dashboard/admin/packages",
         label: "Packages",
@@ -58,6 +64,12 @@ export const navItems: NavItem[] = [
     href: "/dashboard/analytics",
     label: "Analytics",
     icon: BarChart3,
+    roles: ["ADMIN", "MANAGER"],
+  },
+  {
+    href: "/dashboard/earnings",
+    label: "Earnings",
+    icon: IndianRupee,
     roles: ["ADMIN", "MANAGER"],
   },
   { href: "/dashboard/users", label: "Users", icon: UserCog, roles: ["ADMIN"] },

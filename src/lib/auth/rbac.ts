@@ -4,7 +4,6 @@ export const permissions = {
   viewAllLeads: (role: UserRole) => role === "ADMIN" || role === "MANAGER",
   deleteLead: (role: UserRole) => role === "ADMIN" || role === "MANAGER",
   reassignLeads: (role: UserRole) => role === "ADMIN" || role === "MANAGER",
-  bulkAssignLeads: (role: UserRole) => role === "ADMIN" || role === "MANAGER",
   manageUsers: (role: UserRole) => role === "ADMIN",
   manageLeadStatuses: (role: UserRole) => role === "ADMIN",
   manageMetaAccounts: (role: UserRole) => role === "ADMIN",

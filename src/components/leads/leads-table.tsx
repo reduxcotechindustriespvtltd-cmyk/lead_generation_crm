@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { toast } from "sonner";
 import {
   ArrowDown,
@@ -24,7 +24,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -76,7 +75,7 @@ type LeadRow = {
   email: string | null;
   city: string | null;
   state: string | null;
-  campaignName: string | null;
+  packageInterest: string | null;
   source: string;
   createdAt: string;
   followUpDate: string | null;
@@ -90,36 +89,28 @@ type Option = { id: string; name: string };
 export function LeadsTable({
   leads,
   statuses,
-  users,
   total,
   page,
   pageSize,
   totalPages,
   sortBy,
   sortDir,
-  canReassign,
-  canBulkAssign,
   canDelete,
 }: {
   leads: LeadRow[];
   statuses: Option[];
-  users: Option[];
   total: number;
   page: number;
   pageSize: number;
   totalPages: number;
   sortBy: string;
   sortDir: "asc" | "desc";
-  canReassign: boolean;
-  canBulkAssign: boolean;
   canDelete: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
-  const [bulkAssignee, setBulkAssignee] = useState<string>("");
   const hasActiveFilters = ["q", "statusId", "source", "assignedToId"].some((key) =>
     searchParams.get(key)
   );
@@ -139,25 +130,6 @@ export function LeadsTable({
     } else {
       updateParams({ sortBy: field, sortDir: "desc" });
     }
-  }
-
-  const allSelected = leads.length > 0 && leads.every((l) => selected.has(l.id));
-
-  function toggleAll() {
-    if (allSelected) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(leads.map((l) => l.id)));
-    }
-  }
-
-  function toggleOne(id: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
   }
 
   async function patchLead(id: string, data: Record<string, unknown>) {
@@ -187,65 +159,12 @@ export function LeadsTable({
     router.refresh();
   }
 
-  async function handleBulkAssign() {
-    if (!bulkAssignee || selected.size === 0) return;
-    const res = await fetch("/api/leads/bulk-assign", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ leadIds: Array.from(selected), assignedToId: bulkAssignee }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      toast.error(err.error ?? "Bulk assign failed");
-      return;
-    }
-    toast.success(`Assigned ${selected.size} lead(s)`);
-    setSelected(new Set());
-    setBulkAssignee("");
-    router.refresh();
-  }
-
   return (
     <div className="flex flex-col gap-3">
-      {canBulkAssign && selected.size > 0 && (
-        <div className="bg-muted/50 flex items-center gap-3 rounded-lg border px-4 py-2">
-          <span className="text-sm font-medium">{selected.size} selected</span>
-          <Select value={bulkAssignee} onValueChange={(v) => setBulkAssignee(v ?? "")}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Assign to...">
-                {(v: string) => users.find((u) => u.id === v)?.name ?? "Assign to..."}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {users.map((u) => (
-                <SelectItem key={u.id} value={u.id}>
-                  {u.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button size="sm" disabled={!bulkAssignee} onClick={handleBulkAssign}>
-            Assign
-          </Button>
-          <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
-            Clear
-          </Button>
-        </div>
-      )}
-
       <div className={cn("overflow-x-auto rounded-lg border", isPending && "opacity-60")}>
         <Table>
           <TableHeader>
             <TableRow>
-              {canBulkAssign && (
-                <TableHead className="w-10">
-                  <Checkbox
-                    checked={allSelected}
-                    onCheckedChange={toggleAll}
-                    aria-label="Select all"
-                  />
-                </TableHead>
-              )}
               <TableHead>
                 <SortHeader
                   field="fullName"
@@ -256,7 +175,7 @@ export function LeadsTable({
                 />
               </TableHead>
               <TableHead>City / State</TableHead>
-              <TableHead>Campaign</TableHead>
+              <TableHead>Package</TableHead>
               <TableHead>Source</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Assigned To</TableHead>
@@ -284,7 +203,7 @@ export function LeadsTable({
           <TableBody>
             {leads.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="h-40 text-center">
+                <TableCell colSpan={9} className="h-40 text-center">
                   {hasActiveFilters ? (
                     <EmptyState
                       icon={SearchX}
@@ -305,15 +224,6 @@ export function LeadsTable({
             ) : (
               leads.map((lead) => (
                 <TableRow key={lead.id} className="group">
-                  {canBulkAssign && (
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <Checkbox
-                        checked={selected.has(lead.id)}
-                        onCheckedChange={() => toggleOne(lead.id)}
-                        aria-label={`Select ${lead.fullName}`}
-                      />
-                    </TableCell>
-                  )}
                   <TableCell
                     className="cursor-pointer"
                     onClick={() => router.push(`/dashboard/leads/${lead.id}`)}
@@ -331,7 +241,7 @@ export function LeadsTable({
                     className="max-w-[180px] cursor-pointer truncate text-sm"
                     onClick={() => router.push(`/dashboard/leads/${lead.id}`)}
                   >
-                    {lead.campaignName ?? "—"}
+                    {lead.packageInterest ?? "—"}
                   </TableCell>
                   <TableCell>
                     <SourceBadge source={lead.source} />
@@ -355,31 +265,8 @@ export function LeadsTable({
                       </SelectContent>
                     </Select>
                   </TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    {canReassign ? (
-                      <Select
-                        value={lead.assignedTo?.id ?? "unassigned"}
-                        onValueChange={(v) =>
-                          patchLead(lead.id, { assignedToId: v === "unassigned" ? null : v })
-                        }
-                      >
-                        <SelectTrigger className="h-7 w-[140px] border-none bg-transparent px-1 shadow-none">
-                          <SelectValue placeholder="Unassigned">
-                            {lead.assignedTo?.name ?? "Unassigned"}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="unassigned">Unassigned</SelectItem>
-                          {users.map((u) => (
-                            <SelectItem key={u.id} value={u.id}>
-                              {u.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <span className="text-sm">{lead.assignedTo?.name ?? "Unassigned"}</span>
-                    )}
+                  <TableCell>
+                    <span className="text-sm">{lead.assignedTo?.name ?? "Unassigned"}</span>
                   </TableCell>
                   <TableCell
                     className="cursor-pointer text-sm"

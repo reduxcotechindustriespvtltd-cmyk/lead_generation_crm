@@ -1,12 +1,12 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth/session";
-import { can } from "@/lib/auth/rbac";
 import { getLeadDetail, type LeadScope } from "@/lib/queries/leads";
 import { LeadHeader } from "@/components/leads/lead-header";
 import { LeadTimeline } from "@/components/leads/lead-timeline";
 import { LeadNotes } from "@/components/leads/lead-notes";
 import { LeadFollowUps } from "@/components/leads/lead-follow-ups";
+import { LeadBookingHistory } from "@/components/leads/lead-booking-history";
 import { LeadWhatsAppChat } from "@/components/leads/lead-whatsapp-chat";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -43,12 +43,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-4">
-      <LeadHeader
-        lead={lead}
-        statuses={statuses}
-        users={users}
-        canReassign={can(session.role, "reassignLeads")}
-      />
+      <LeadHeader lead={lead} statuses={statuses} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="flex flex-col gap-4">
@@ -71,6 +66,18 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               dueAt: f.dueAt.toISOString(),
               note: f.note,
               status: f.status,
+            }))}
+          />
+          <LeadBookingHistory
+            bookings={lead.bookings.map((b) => ({
+              id: b.id,
+              checkInDate: b.checkInDate.toISOString(),
+              checkOutDate: b.checkOutDate.toISOString(),
+              adultCount: b.adultCount,
+              kidsCount: b.kidsCount,
+              status: b.status,
+              totalRevenue: b.totalRevenue.toString(),
+              packageName: b.packageName,
             }))}
           />
         </div>

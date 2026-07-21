@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireUser } from "@/lib/auth/session";
+import { requireRole } from "@/lib/auth/session";
 import { handleApiError, jsonError } from "@/lib/api-response";
 import { calculateBookingFinancials } from "@/lib/booking-financials";
 import { listBookings } from "@/lib/queries/bookings";
@@ -9,7 +9,7 @@ import { bookingListQuerySchema, createBookingSchema } from "@/lib/validations/b
 
 export async function GET(request: NextRequest) {
   try {
-    await requireUser();
+    await requireRole("ADMIN", "MANAGER");
     const query = bookingListQuerySchema.parse(
       Object.fromEntries(request.nextUrl.searchParams.entries())
     );
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await requireUser();
+    const session = await requireRole("ADMIN", "MANAGER");
     const formData = await request.formData();
 
     const input = createBookingSchema.parse({
@@ -38,9 +38,16 @@ export async function POST(request: NextRequest) {
       vendorAmount: formData.get("vendorAmount") || undefined,
       status: formData.get("status") || undefined,
       leadId: formData.get("leadId") || undefined,
+      packageId: formData.get("packageId") || undefined,
     });
 
     const { totalRevenue, profit } = calculateBookingFinancials(input);
+
+    // Snapshot the package name/destination at booking time — denormalized
+    // so earnings reporting survives the package being renamed/deleted later.
+    const linkedPackage = input.packageId
+      ? await db.package.findUnique({ where: { id: input.packageId } })
+      : null;
 
     let attachment: { path: string; mimeType: string } | null = null;
     const file = formData.get("attachment");
@@ -71,6 +78,9 @@ export async function POST(request: NextRequest) {
         profit,
         status: input.status,
         leadId: input.leadId,
+        packageId: linkedPackage?.id,
+        packageName: linkedPackage?.name,
+        destination: linkedPackage?.destination,
         createdById: session.sub,
         attachmentPath: attachment?.path,
         attachmentName: file instanceof File ? file.name : undefined,

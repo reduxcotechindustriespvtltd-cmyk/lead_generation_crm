@@ -28,6 +28,8 @@ export async function PATCH(request: Request) {
         primaryColor: input.primaryColor,
         secondaryColor: input.secondaryColor,
         supportEmail: input.supportEmail || null,
+        primaryPhone: input.primaryPhone || null,
+        secondaryPhone: input.secondaryPhone || null,
       },
       create: {
         id: "singleton",
@@ -36,6 +38,8 @@ export async function PATCH(request: Request) {
         primaryColor: input.primaryColor,
         secondaryColor: input.secondaryColor,
         supportEmail: input.supportEmail || null,
+        primaryPhone: input.primaryPhone || null,
+        secondaryPhone: input.secondaryPhone || null,
       },
     });
 

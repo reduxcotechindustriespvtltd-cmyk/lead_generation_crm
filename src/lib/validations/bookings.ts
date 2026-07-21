@@ -44,6 +44,11 @@ const rawBookingFields = {
     .optional()
     .or(z.literal(""))
     .transform((v) => v || undefined),
+  packageId: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => v || undefined),
 };
 
 export const createBookingSchema = z
@@ -85,6 +90,7 @@ export const bookingFormSchema = z
     // every registered field and optional-key typing fights zodResolver's
     // generic inference here.
     leadId: z.string(),
+    packageId: z.string(),
   })
   .refine((data) => data.checkOutDate > data.checkInDate, {
     message: "Check-out date must be after check-in date",
@@ -107,6 +113,7 @@ export const updateBookingSchema = z
     vendorAmount: rawBookingFields.vendorAmount.optional(),
     status: rawBookingFields.status.optional(),
     leadId: rawBookingFields.leadId,
+    packageId: rawBookingFields.packageId,
     removeAttachment: z.coerce.boolean().optional(),
   })
   .refine(

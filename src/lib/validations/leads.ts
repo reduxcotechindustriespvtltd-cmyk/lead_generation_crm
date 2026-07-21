@@ -32,7 +32,7 @@ export const createLeadSchema = z.object({
     .transform((v) => v || undefined),
   city: z.string().trim().max(100).optional(),
   state: z.string().trim().max(100).optional(),
-  campaignName: z.string().trim().max(200).optional(),
+  packageInterest: z.string().trim().max(200).optional(),
   source: z.enum(["FACEBOOK", "INSTAGRAM", "WHATSAPP", "MANUAL", "WEBSITE", "OTHER"]),
   statusId: z.string().min(1, "Status is required"),
   assignedToId: z.string().optional(),

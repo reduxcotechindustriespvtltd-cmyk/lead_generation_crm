@@ -15,12 +15,17 @@ export default async function BookingsPage({
   const sp = await searchParams;
   const query = bookingListQuerySchema.parse(sp);
 
-  const [result, leads] = await Promise.all([
+  const [result, leads, packages] = await Promise.all([
     listBookings(query),
     db.lead.findMany({
       select: { id: true, fullName: true },
       orderBy: { fullName: "asc" },
       take: 500,
+    }),
+    db.package.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true, destination: true },
+      orderBy: { order: "asc" },
     }),
   ]);
 
@@ -42,6 +47,9 @@ export default async function BookingsPage({
     profit: booking.profit.toString(),
     status: booking.status,
     leadId: booking.leadId,
+    packageId: booking.packageId,
+    packageName: booking.packageName,
+    destination: booking.destination,
     attachmentPath: booking.attachmentPath,
     attachmentName: booking.attachmentName,
     lead: booking.lead,
@@ -56,11 +64,12 @@ export default async function BookingsPage({
         </p>
       </div>
 
-      <BookingsToolbar leads={leads} />
+      <BookingsToolbar leads={leads} packages={packages} />
 
       <BookingsTable
         bookings={bookings}
         leads={leads}
+        packages={packages}
         total={result.total}
         page={result.page}
         pageSize={result.pageSize}

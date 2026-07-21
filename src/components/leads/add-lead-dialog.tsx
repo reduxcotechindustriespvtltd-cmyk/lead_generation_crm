@@ -42,12 +42,8 @@ type Option = { id: string; name: string };
 
 export function AddLeadDialog({
   statuses,
-  users,
-  canAssign,
 }: {
   statuses: Option[];
-  users: Option[];
-  canAssign: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -63,7 +59,7 @@ export function AddLeadDialog({
       email: "",
       city: "",
       state: "",
-      campaignName: "",
+      packageInterest: "",
       source: "MANUAL",
       statusId: defaultStatus,
       assignedToId: undefined,
@@ -177,7 +173,7 @@ export function AddLeadDialog({
               />
               <FormField
                 control={form.control}
-                name="campaignName"
+                name="packageInterest"
                 render={({ field }) => (
                   <FormItem className="col-span-2">
                     <FormLabel>Package / Interest</FormLabel>
@@ -216,34 +212,6 @@ export function AddLeadDialog({
                   </FormItem>
                 )}
               />
-              {canAssign && (
-                <FormField
-                  control={form.control}
-                  name="assignedToId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Assign to</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Unassigned">
-                              {(v: string) => users.find((u) => u.id === v)?.name ?? "Unassigned"}
-                            </SelectValue>
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {users.map((u) => (
-                            <SelectItem key={u.id} value={u.id}>
-                              {u.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
