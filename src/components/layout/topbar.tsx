@@ -1,6 +1,5 @@
 import { MobileSidebar } from "@/components/layout/mobile-sidebar";
 import { SearchTrigger } from "@/components/layout/search-trigger";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { UserMenu } from "@/components/layout/user-menu";
 import { NotificationsBell } from "@/components/layout/notifications-bell";
 import type { UserRole } from "@/generated/prisma/client";
@@ -22,7 +21,6 @@ export function Topbar({
       </div>
       <div className="flex items-center gap-1">
         <NotificationsBell />
-        <ThemeToggle />
         <UserMenu user={user} />
       </div>
     </header>

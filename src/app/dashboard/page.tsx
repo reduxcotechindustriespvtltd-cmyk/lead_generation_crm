@@ -3,11 +3,13 @@ import {
   CalendarDays,
   CalendarRange,
   Calendar,
-  Sparkles,
-  PhoneCall,
-  BadgeCheck,
+  UserX,
+  UserCheck,
   Trophy,
   XCircle,
+  CalendarCheck2,
+  TrendingUp,
+  IndianRupee,
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth/session";
 import {
@@ -20,6 +22,7 @@ import {
 } from "@/lib/queries/dashboard";
 import { getFollowUpsGrouped } from "@/lib/queries/follow-ups";
 import { getOnboardingStatus } from "@/lib/queries/onboarding";
+import { getEarningsSummary } from "@/lib/queries/earnings";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { LeadsByDayChart } from "@/components/dashboard/leads-by-day-chart";
 import { LeadsByMonthChart } from "@/components/dashboard/leads-by-month-chart";
@@ -41,6 +44,7 @@ export default async function DashboardPage() {
   const scope = session?.role === "SALES_EXECUTIVE" ? { assignedToId: session.sub } : {};
   const leadScope = session?.role === "SALES_EXECUTIVE" ? { forcedAssignedToId: session.sub } : {};
   const firstName = session?.name.split(" ")[0];
+  const canSeeRevenue = session?.role !== "SALES_EXECUTIVE";
 
   const [
     counts,
@@ -51,6 +55,7 @@ export default async function DashboardPage() {
     recentActivity,
     followUps,
     onboarding,
+    earnings,
   ] = await Promise.all([
     getLeadCounts(scope),
     getLeadsByDay(scope),
@@ -60,7 +65,11 @@ export default async function DashboardPage() {
     getRecentActivity(scope),
     getFollowUpsGrouped(leadScope),
     session?.role === "ADMIN" ? getOnboardingStatus() : Promise.resolve(null),
+    canSeeRevenue ? getEarningsSummary() : Promise.resolve(null),
   ]);
+
+  const overallConversionRate =
+    counts.total > 0 ? Math.round((counts.converted / counts.total) * 1000) / 10 : 0;
 
   const dueTodayAndOverdue = [
     ...followUps.missed.map((f) => ({ ...f, isOverdue: true })),
@@ -87,14 +96,36 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <StatCard label="Total Leads" value={counts.total} icon={Users} accent="blue" />
-        <StatCard label="Today" value={counts.today} icon={CalendarDays} accent="purple" />
+        <StatCard label="Today's Leads" value={counts.today} icon={CalendarDays} accent="purple" />
         <StatCard label="This Week" value={counts.thisWeek} icon={CalendarRange} accent="purple" />
-        <StatCard label="This Month" value={counts.thisMonth} icon={Calendar} accent="purple" />
-        <StatCard label="New" value={counts.newLeads} icon={Sparkles} accent="blue" />
-        <StatCard label="Contacted" value={counts.contacted} icon={PhoneCall} accent="amber" />
-        <StatCard label="Qualified" value={counts.qualified} icon={BadgeCheck} accent="teal" />
+        <StatCard label="Monthly Leads" value={counts.thisMonth} icon={Calendar} accent="purple" />
+        <StatCard label="Unassigned" value={counts.unassigned} icon={UserX} accent="amber" />
+        <StatCard label="Assigned" value={counts.assigned} icon={UserCheck} accent="blue" />
         <StatCard label="Converted" value={counts.converted} icon={Trophy} accent="green" />
         <StatCard label="Lost" value={counts.lost} icon={XCircle} accent="red" />
+        <StatCard
+          label="Conversion Rate"
+          value={`${overallConversionRate}%`}
+          icon={TrendingUp}
+          accent="green"
+        />
+        {earnings && (
+          <>
+            <StatCard label="Booked" value={earnings.bookingCount} icon={CalendarCheck2} accent="teal" />
+            <StatCard
+              label="Total Revenue"
+              value={`₹${earnings.totalRevenue.toLocaleString("en-IN")}`}
+              icon={IndianRupee}
+              accent="green"
+            />
+            <StatCard
+              label="Monthly Revenue"
+              value={`₹${earnings.monthlyRevenue.toLocaleString("en-IN")}`}
+              icon={IndianRupee}
+              accent="green"
+            />
+          </>
+        )}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

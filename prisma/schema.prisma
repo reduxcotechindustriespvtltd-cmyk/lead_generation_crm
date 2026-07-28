@@ -97,6 +97,7 @@ model User {
   assignmentRuleMembers     AssignmentRuleMember[]
   sentWhatsAppMessages      WhatsAppMessage[]
   createdBookings           Booking[]              @relation("BookingCreatedBy")
+  assignedBookings          Booking[]              @relation("BookingAssignee")
 
   @@index([role])
   @@index([organizationId])
@@ -305,7 +306,8 @@ model LeadStatus {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  leads Lead[]
+  leads    Lead[]
+  bookings Booking[]
 
   @@map("lead_statuses")
 }
@@ -400,9 +402,20 @@ model Lead {
 // Bookings — confirmed paying guests (optionally converted from a Lead)
 // ─────────────────────────────────────────────────────────────
 
-enum BookingStatus {
-  CONFIRMED
-  CANCELLED
+enum StayType {
+  VILLA
+  TENT_CAMPING
+  COTTAGE
+  FARM_HOUSE
+  GLAMPING
+  RESORT
+}
+
+enum BookingLocation {
+  LONAVALA
+  KARJAT
+  ALIBAGH
+  PANVEL
 }
 
 model Booking {
@@ -410,27 +423,57 @@ model Booking {
 
   guestName String
   phone     String
+  email     String?
 
   checkInDate  DateTime
   checkOutDate DateTime
+  nights       Int      @default(1)
+
+  stayType StayType?
 
   adultCount  Int @default(1)
   kidsCount   Int @default(0)
   infantCount Int @default(0)
 
+  // "Per Person Amount" / "Per Kid Amount" in the UI — both are per-night
+  // rates, multiplied by nights (as well as guest count) into totalRevenue.
   adultCostPerPerson Decimal @db.Decimal(12, 2)
   kidsCostPerPerson  Decimal @default(0) @db.Decimal(12, 2)
   vendorAmount       Decimal @default(0) @db.Decimal(12, 2)
+  // "B2B" in the UI — same per-adult/per-kid/per-night shape as the main
+  // pricing above (e.g. an agent/reseller's own per-guest nightly rate), not
+  // a flat amount.
+  b2bAdultAmount     Decimal @default(0) @db.Decimal(12, 2)
+  b2bKidAmount       Decimal @default(0) @db.Decimal(12, 2)
 
   // Server-computed on every create/update via calculateBookingFinancials() —
   // never accepted directly from client input.
-  totalRevenue Decimal @db.Decimal(12, 2)
-  profit       Decimal @db.Decimal(12, 2)
+  totalRevenue   Decimal @db.Decimal(12, 2)
+  profit         Decimal @db.Decimal(12, 2)
+  advance        Decimal @default(0) @db.Decimal(12, 2)
+  balanceAmount  Decimal @db.Decimal(12, 2)
 
-  status BookingStatus @default(CONFIRMED)
+  includesFood Boolean @default(false)
+  notes        String?
+  description  String?
+
+  source   LeadSource?
+  location BookingLocation?
+
+  // Uses the same admin-configurable status list as leads (Settings > Lead
+  // Statuses) rather than a fixed Confirmed/Cancelled enum — a booking's
+  // status is just one more call-disposition-style value, not a separate
+  // vocabulary. Revenue/earnings totals count every booking regardless of
+  // status (see src/lib/queries/earnings.ts) since a Booking row already
+  // represents a real reservation.
+  statusId String
+  status   LeadStatus @relation(fields: [statusId], references: [id])
 
   leadId String?
   lead   Lead?   @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  assignedToId String?
+  assignedTo   User?   @relation("BookingAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
 
   // Which package/destination this stay is for. packageName/destination are
   // a denormalized snapshot at booking time (same rationale as Lead's
@@ -440,6 +483,7 @@ model Booking {
   package     Package? @relation(fields: [packageId], references: [id], onDelete: SetNull)
   packageName String?
   destination String?
+  resortName  String?
 
   // Optional attachment (payment screenshot / ID proof) — stored on local
   // disk, not Vercel Blob, since this app is self-hosted via Docker.
@@ -455,8 +499,9 @@ model Booking {
 
   @@index([leadId])
   @@index([packageId])
+  @@index([assignedToId])
   @@index([checkInDate])
-  @@index([status])
+  @@index([statusId])
   @@index([createdAt])
   @@index([phone])
   @@map("bookings")

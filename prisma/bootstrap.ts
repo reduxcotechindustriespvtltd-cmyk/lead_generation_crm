@@ -15,16 +15,28 @@ import { safeHexColor } from "../src/lib/hex-color";
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const db = new PrismaClient({ adapter });
 
+// Call-disposition statuses matching how the sales team actually works leads
+// over the phone — see prisma/seed.ts for the full rationale (this list must
+// stay in sync with that one).
 const LEAD_STATUSES = [
-  { name: "New", color: "#3b82f6", order: 0, isDefault: true },
-  { name: "Attempted Contact", color: "#eab308", order: 1 },
-  { name: "Contacted", color: "#6366f1", order: 2 },
-  { name: "Interested", color: "#a855f7", order: 3 },
-  { name: "Follow-up", color: "#f97316", order: 4 },
-  { name: "Qualified", color: "#14b8a6", order: 5 },
-  { name: "Converted", color: "#22c55e", order: 6, isFinal: true, isWon: true },
-  { name: "Lost", color: "#ef4444", order: 7, isFinal: true },
-  { name: "Spam", color: "#6b7280", order: 8, isFinal: true },
+  { name: "Unassigned", color: "#6b7280", order: 0, isDefault: true },
+  { name: "Assigned", color: "#3b82f6", order: 1 },
+  { name: "Follow-up", color: "#f97316", order: 2 },
+  { name: "Call Back", color: "#eab308", order: 3 },
+  { name: "Ringing", color: "#06b6d4", order: 4 },
+  { name: "Busy", color: "#f59e0b", order: 5 },
+  { name: "Switch Off", color: "#64748b", order: 6 },
+  { name: "Out of Service", color: "#78716c", order: 7 },
+  { name: "Postponed", color: "#a855f7", order: 8 },
+  { name: "Booked Other", color: "#ec4899", order: 9, isFinal: true },
+  { name: "Low Budget", color: "#ef4444", order: 10, isFinal: true },
+  { name: "Not Required", color: "#dc2626", order: 11, isFinal: true },
+  { name: "Plan Cancelled", color: "#b91c1c", order: 12, isFinal: true },
+  { name: "High Amount", color: "#f43f5e", order: 13, isFinal: true },
+  { name: "No Response", color: "#737373", order: 14, isFinal: true },
+  { name: "Late Connected", color: "#92400e", order: 15, isFinal: true },
+  { name: "Wrong Number", color: "#7c2d12", order: 16, isFinal: true },
+  { name: "Date Not Available", color: "#57534e", order: 17, isFinal: true },
 ];
 
 async function main() {

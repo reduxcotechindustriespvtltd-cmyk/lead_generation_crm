@@ -13,7 +13,7 @@ export function buildBookingWhere(query: BookingListQuery): Prisma.BookingWhereI
     ];
   }
 
-  if (query.status) where.status = query.status;
+  if (query.statusId) where.statusId = query.statusId;
   if (query.leadId) where.leadId = query.leadId;
 
   return where;
@@ -36,6 +36,7 @@ export async function listBookings(query: BookingListQuery) {
             status: { select: { name: true, color: true } },
           },
         },
+        status: { select: { id: true, name: true, color: true } },
         createdBy: { select: { id: true, name: true } },
       },
     }),
@@ -63,6 +64,7 @@ export async function getBookingDetail(id: string) {
           status: { select: { name: true, color: true } },
         },
       },
+      status: { select: { id: true, name: true, color: true } },
       createdBy: { select: { id: true, name: true } },
     },
   });

@@ -1,67 +1,164 @@
-import Link from "next/link";
-import { CalendarCheck2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
-import { BookingStatusBadge } from "@/components/bookings/booking-status-badge";
+"use client";
 
-type BookingSummary = {
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { CalendarCheck2, Loader2, Paperclip, Pencil, Trash2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { LeadStatusBadge } from "@/components/leads/lead-status-badge";
+import { BookingForm, type BookingRow } from "@/components/bookings/booking-form";
+
+type PackageOption = {
   id: string;
-  checkInDate: string;
-  checkOutDate: string;
-  adultCount: number;
-  kidsCount: number;
-  status: "CONFIRMED" | "CANCELLED";
-  totalRevenue: string;
-  packageName: string | null;
+  name: string;
+  destination: string | null;
+  type: string;
+  price: string;
+  priceUnit: string;
+  maxGuests: number;
+  description: string;
+  imagePath: string;
 };
+type UserOption = { id: string; name: string };
+type StatusOption = { id: string; name: string; color: string };
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
-export function LeadBookingHistory({ bookings }: { bookings: BookingSummary[] }) {
+export function LeadBookingHistory({
+  leadId,
+  leadDefaults,
+  bookings,
+  packages,
+  users,
+  statuses,
+  canManage,
+  canDelete,
+}: {
+  leadId: string;
+  leadDefaults: { fullName: string; phone: string };
+  bookings: BookingRow[];
+  packages: PackageOption[];
+  users: UserOption[];
+  statuses: StatusOption[];
+  canManage: boolean;
+  canDelete: boolean;
+}) {
+  const router = useRouter();
+  const [editingBooking, setEditingBooking] = useState<BookingRow | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  async function handleDelete(booking: BookingRow) {
+    if (!confirm(`Delete booking for "${booking.guestName}"? This cannot be undone.`)) return;
+    setDeletingId(booking.id);
+    const res = await fetch(`/api/bookings/${booking.id}`, { method: "DELETE" });
+    setDeletingId(null);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      toast.error(err.error ?? "Delete failed");
+      return;
+    }
+    toast.success("Booking deleted");
+    if (editingBooking?.id === booking.id) setEditingBooking(null);
+    router.refresh();
+  }
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Booking History</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {bookings.length === 0 ? (
-          <EmptyState
-            icon={CalendarCheck2}
-            title="No bookings yet"
-            description="Confirmed stays for this lead will show up here."
-            size="sm"
-          />
-        ) : (
-          <div className="flex flex-col divide-y">
-            {bookings.map((booking) => (
-              <Link
-                key={booking.id}
-                href={`/dashboard/bookings/${booking.id}`}
-                className="hover:bg-muted/50 -mx-2 flex items-center justify-between gap-3 rounded-lg px-2 py-3 text-sm"
-              >
-                <div>
-                  <div className="font-medium">
-                    {formatDate(booking.checkInDate)} → {formatDate(booking.checkOutDate)}
+    <div className="flex flex-col gap-4">
+      {canManage && (
+        <BookingForm
+          key={editingBooking?.id ?? "create"}
+          mode={editingBooking ? "edit" : "create"}
+          booking={editingBooking ?? undefined}
+          leads={[]}
+          packages={packages}
+          users={users}
+          statuses={statuses}
+          lockedLeadId={leadId}
+          leadDefaults={leadDefaults}
+          onDone={() => setEditingBooking(null)}
+          onCancel={() => setEditingBooking(null)}
+        />
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Booking History</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {bookings.length === 0 ? (
+            <EmptyState
+              icon={CalendarCheck2}
+              title="No bookings yet"
+              description="Confirmed stays for this lead will show up here."
+              size="sm"
+            />
+          ) : (
+            <div className="flex flex-col divide-y">
+              {bookings.map((booking) => (
+                <div
+                  key={booking.id}
+                  className="-mx-2 flex items-center justify-between gap-3 rounded-lg px-2 py-3 text-sm"
+                >
+                  <div className="min-w-0">
+                    <div className="font-medium">
+                      {formatDate(booking.checkInDate)} → {formatDate(booking.checkOutDate)}
+                    </div>
+                    <div className="text-muted-foreground text-xs">
+                      {booking.packageName ?? "No package"} · {booking.adultCount} Adult
+                      {booking.adultCount === 1 ? "" : "s"}
+                      {booking.kidsCount > 0 ? ` · ${booking.kidsCount} Kids` : ""}
+                    </div>
+                    {booking.attachmentPath && (
+                      <a
+                        href={`/api/files/${booking.attachmentPath}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-0.5 flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                      >
+                        <Paperclip className="size-3" />
+                        {booking.attachmentName ?? "View attachment"}
+                      </a>
+                    )}
                   </div>
-                  <div className="text-muted-foreground text-xs">
-                    {booking.packageName ?? "No package"} · {booking.adultCount} Adult
-                    {booking.adultCount === 1 ? "" : "s"}
-                    {booking.kidsCount > 0 ? ` · ${booking.kidsCount} Kids` : ""}
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <span className="font-medium">
+                      ₹{Number(booking.totalRevenue).toLocaleString("en-IN")}
+                    </span>
+                    <LeadStatusBadge name={booking.status.name} color={booking.status.color} />
+                    {canManage && (
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => setEditingBooking(booking)}
+                      >
+                        <Pencil className="size-3.5" />
+                      </Button>
+                    )}
+                    {canDelete && (
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => handleDelete(booking)}
+                        disabled={deletingId === booking.id}
+                      >
+                        {deletingId === booking.id ? (
+                          <Loader2 className="size-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="size-3.5" />
+                        )}
+                      </Button>
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-medium">
-                    ₹{Number(booking.totalRevenue).toLocaleString("en-IN")}
-                  </span>
-                  <BookingStatusBadge status={booking.status} />
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

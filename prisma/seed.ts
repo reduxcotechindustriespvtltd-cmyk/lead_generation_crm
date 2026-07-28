@@ -5,17 +5,58 @@ import { hashPassword } from "../src/lib/auth/password";
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const db = new PrismaClient({ adapter });
 
+// Call-disposition statuses matching how the sales team actually works leads
+// over the phone — not a generic New/Contacted/Qualified/Converted pipeline.
+// "Unassigned" is the entry point for every freshly captured lead (isDefault:
+// true — see src/app/api/public/website-leads/route.ts, src/lib/meta/sync.ts,
+// src/app/api/meta/webhook/route.ts, src/lib/whatsapp/process-message.ts,
+// all of which look up isDefault to stamp new leads). There's no "Converted"
+// status here — an actual conversion is now tracked via a confirmed Booking
+// (see src/lib/queries/dashboard.ts, src/lib/queries/analytics.ts), not a
+// lead status, so nothing in this list is isWon.
 const LEAD_STATUSES = [
-  { name: "New", color: "#3b82f6", order: 0, isDefault: true },
-  { name: "Attempted Contact", color: "#eab308", order: 1 },
-  { name: "Contacted", color: "#6366f1", order: 2 },
-  { name: "Interested", color: "#a855f7", order: 3 },
-  { name: "Follow-up", color: "#f97316", order: 4 },
-  { name: "Qualified", color: "#14b8a6", order: 5 },
-  { name: "Converted", color: "#22c55e", order: 6, isFinal: true, isWon: true },
-  { name: "Lost", color: "#ef4444", order: 7, isFinal: true },
-  { name: "Spam", color: "#6b7280", order: 8, isFinal: true },
+  { name: "Unassigned", color: "#6b7280", order: 0, isDefault: true },
+  { name: "Assigned", color: "#3b82f6", order: 1 },
+  { name: "Follow-up", color: "#f97316", order: 2 },
+  { name: "Call Back", color: "#eab308", order: 3 },
+  { name: "Ringing", color: "#06b6d4", order: 4 },
+  { name: "Busy", color: "#f59e0b", order: 5 },
+  { name: "Switch Off", color: "#64748b", order: 6 },
+  { name: "Out of Service", color: "#78716c", order: 7 },
+  { name: "Postponed", color: "#a855f7", order: 8 },
+  { name: "Booked Other", color: "#ec4899", order: 9, isFinal: true },
+  { name: "Low Budget", color: "#ef4444", order: 10, isFinal: true },
+  { name: "Not Required", color: "#dc2626", order: 11, isFinal: true },
+  { name: "Plan Cancelled", color: "#b91c1c", order: 12, isFinal: true },
+  { name: "High Amount", color: "#f43f5e", order: 13, isFinal: true },
+  { name: "No Response", color: "#737373", order: 14, isFinal: true },
+  { name: "Late Connected", color: "#92400e", order: 15, isFinal: true },
+  { name: "Wrong Number", color: "#7c2d12", order: 16, isFinal: true },
+  { name: "Date Not Available", color: "#57534e", order: 17, isFinal: true },
 ];
+
+// Demo-data-only weighting (heavier at the top of funnel) — keyed by name so
+// it stays valid regardless of how LEAD_STATUSES is reordered/resized.
+const STATUS_DEMO_WEIGHTS: Record<string, number> = {
+  Unassigned: 20,
+  Assigned: 20,
+  "Follow-up": 14,
+  "Call Back": 12,
+  Ringing: 10,
+  Busy: 10,
+  "Switch Off": 8,
+  "Out of Service": 6,
+  Postponed: 8,
+  "Booked Other": 6,
+  "Low Budget": 6,
+  "Not Required": 6,
+  "Plan Cancelled": 5,
+  "High Amount": 5,
+  "No Response": 6,
+  "Late Connected": 5,
+  "Wrong Number": 4,
+  "Date Not Available": 4,
+};
 
 const CAMPAIGNS = [
   {
@@ -223,13 +264,13 @@ async function main() {
   const salesTeam = [sales1, sales2, sales3];
 
   console.log("Seeding leads with activity history...");
-  const statusOrder = LEAD_STATUSES.map((s) => s.name);
+  const statusMeta = new Map(LEAD_STATUSES.map((s) => [s.name, s]));
   // Weighted distribution across the pipeline (more at top of funnel).
-  const statusWeights = [30, 14, 16, 12, 10, 8, 14, 12, 6];
   const weightedStatuses: string[] = [];
-  statusOrder.forEach((name, i) => {
-    for (let k = 0; k < statusWeights[i]; k++) weightedStatuses.push(name);
-  });
+  for (const s of LEAD_STATUSES) {
+    const weight = STATUS_DEMO_WEIGHTS[s.name] ?? 1;
+    for (let k = 0; k < weight; k++) weightedStatuses.push(s.name);
+  }
 
   const LEAD_COUNT = 160;
   let seed = 1;
@@ -247,8 +288,9 @@ async function main() {
     const source: LeadSource = i % 10 < 7 ? "FACEBOOK" : i % 10 < 9 ? "INSTAGRAM" : "MANUAL";
     const statusName = pick(weightedStatuses, i * 11 + 5);
     const statusId = statuses.get(statusName)!;
-    const isFinal = ["Converted", "Lost", "Spam"].includes(statusName);
-    const assignedTo = statusName === "New" && rand > 0.6 ? null : pick(salesTeam, i);
+    const meta = statusMeta.get(statusName)!;
+    const isFinal = meta.isFinal ?? false;
+    const assignedTo = meta.isDefault && rand > 0.6 ? null : pick(salesTeam, i);
     const phone = `9${(700000000 + i * 137 + 1000).toString().slice(0, 9)}`;
 
     const lead = await db.lead.create({
@@ -301,12 +343,12 @@ async function main() {
       });
     }
 
-    if (statusName !== "New") {
+    if (!meta.isDefault) {
       await db.activity.create({
         data: {
           leadId: lead.id,
           userId: assignedTo?.id ?? manager.id,
-          type: "STATUS_CHANGED",
+          type: isFinal ? "MARKED_LOST" : "STATUS_CHANGED",
           description: `Status changed to ${statusName}`,
           createdAt: new Date(createdAt.getTime() + 2 * 60 * 60 * 1000),
         },
@@ -316,14 +358,9 @@ async function main() {
         data: {
           leadId: lead.id,
           userId: assignedTo?.id ?? manager.id,
-          content:
-            statusName === "Converted"
-              ? "Customer confirmed booking, payment received. Package finalized."
-              : statusName === "Lost"
-                ? "Customer went with a different agency due to pricing."
-                : statusName === "Spam"
-                  ? "Invalid enquiry / test submission."
-                  : "Spoke with the customer, sharing package details over WhatsApp.",
+          content: isFinal
+            ? `Didn't convert — marked as "${statusName}".`
+            : "Spoke with the customer, sharing package details over WhatsApp.",
           createdAt: new Date(createdAt.getTime() + 2.5 * 60 * 60 * 1000),
         },
       });

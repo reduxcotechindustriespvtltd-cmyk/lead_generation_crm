@@ -2,14 +2,13 @@ import "server-only";
 import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 
-// "Revenue" here means confirmed booking value (Booking.totalRevenue, summed
-// only where status = CONFIRMED) — there's no payment-status concept in this
-// schema (the PhonePe integration covers CRM SaaS billing only, not guest
-// payments), so this is the closest available definition. Monthly/yearly
+// "Revenue" here means every Booking row's totalRevenue — a Booking already
+// represents a real reservation (dates, guest counts, pricing all entered),
+// so it counts toward revenue regardless of its status. Status is a free-form
+// admin-configurable list shared with leads (see Booking.statusId in
+// schema.prisma), not a fixed Confirmed/Cancelled gate. Monthly/yearly
 // bucketing uses checkInDate (the stay date), not createdAt (when the row
 // was entered) — more meaningful for a stay-booking business.
-const CONFIRMED = { status: "CONFIRMED" as const };
-
 function startOfYear() {
   const d = new Date();
   d.setMonth(0, 1);
@@ -26,16 +25,16 @@ function startOfMonth() {
 
 export async function getEarningsSummary() {
   const [totalAgg, monthlyAgg, yearlyAgg, bookingCount] = await Promise.all([
-    db.booking.aggregate({ where: CONFIRMED, _sum: { totalRevenue: true } }),
+    db.booking.aggregate({ _sum: { totalRevenue: true } }),
     db.booking.aggregate({
-      where: { ...CONFIRMED, checkInDate: { gte: startOfMonth() } },
+      where: { checkInDate: { gte: startOfMonth() } },
       _sum: { totalRevenue: true },
     }),
     db.booking.aggregate({
-      where: { ...CONFIRMED, checkInDate: { gte: startOfYear() } },
+      where: { checkInDate: { gte: startOfYear() } },
       _sum: { totalRevenue: true },
     }),
-    db.booking.count({ where: CONFIRMED }),
+    db.booking.count(),
   ]);
 
   return {
@@ -50,8 +49,7 @@ export async function getMonthlyEarnings(months = 12) {
   const rows = await db.$queryRaw<{ month: Date; revenue: string | null }[]>(Prisma.sql`
     SELECT date_trunc('month', "checkInDate") AS month, SUM("totalRevenue") AS revenue
     FROM "bookings"
-    WHERE "status" = 'CONFIRMED'
-      AND "checkInDate" >= date_trunc('month', NOW()) - INTERVAL '${Prisma.raw(String(months - 1))} months'
+    WHERE "checkInDate" >= date_trunc('month', NOW()) - INTERVAL '${Prisma.raw(String(months - 1))} months'
     GROUP BY month
     ORDER BY month ASC
   `);
@@ -75,7 +73,7 @@ export async function getMonthlyEarnings(months = 12) {
 export async function getRevenueByPackage() {
   const rows = await db.booking.groupBy({
     by: ["packageName"],
-    where: { ...CONFIRMED, packageName: { not: null } },
+    where: { packageName: { not: null } },
     _sum: { totalRevenue: true },
     _count: { _all: true },
   });
@@ -91,7 +89,7 @@ export async function getRevenueByPackage() {
 export async function getRevenueByDestination() {
   const rows = await db.booking.groupBy({
     by: ["destination"],
-    where: { ...CONFIRMED, destination: { not: null } },
+    where: { destination: { not: null } },
     _sum: { totalRevenue: true },
     _count: { _all: true },
   });

@@ -31,7 +31,7 @@ function startOfMonth() {
 export async function getLeadCounts(scope: DashboardScope) {
   const where = scope.assignedToId ? { assignedToId: scope.assignedToId } : {};
 
-  const [total, today, thisWeek, thisMonth, statuses] = await Promise.all([
+  const [total, today, thisWeek, thisMonth, statuses, converted] = await Promise.all([
     db.lead.count({ where }),
     db.lead.count({ where: { ...where, createdAt: { gte: startOfToday() } } }),
     db.lead.count({ where: { ...where, createdAt: { gte: startOfWeek() } } }),
@@ -41,6 +41,11 @@ export async function getLeadCounts(scope: DashboardScope) {
       where,
       _count: { _all: true },
     }),
+    // A lead is "converted" once it has any booking — a Booking row already
+    // represents a real reservation, and Booking.statusId is just one more
+    // admin-configurable call-disposition value (same list as leads), not a
+    // fixed Confirmed/Cancelled gate.
+    db.lead.count({ where: { ...where, bookings: { some: {} } } }),
   ]);
 
   const statusRows = await db.leadStatus.findMany();
@@ -50,17 +55,19 @@ export async function getLeadCounts(scope: DashboardScope) {
     if (!status) return 0;
     return countByStatusId.get(status.id) ?? 0;
   };
+  const lost = statusRows
+    .filter((s) => s.isFinal)
+    .reduce((sum, s) => sum + (countByStatusId.get(s.id) ?? 0), 0);
 
   return {
     total,
     today,
     thisWeek,
     thisMonth,
-    newLeads: countByStatusName("New"),
-    contacted: countByStatusName("Contacted"),
-    qualified: countByStatusName("Qualified"),
-    converted: countByStatusName("Converted"),
-    lost: countByStatusName("Lost"),
+    unassigned: countByStatusName("Unassigned"),
+    assigned: countByStatusName("Assigned"),
+    converted,
+    lost,
   };
 }
 
@@ -126,7 +133,6 @@ export async function getSourceDistribution(scope: DashboardScope) {
 
 export async function getConversionRateByMonth(scope: DashboardScope, months = 6) {
   const where = scope.assignedToId ? { assignedToId: scope.assignedToId } : {};
-  const convertedStatus = await db.leadStatus.findUnique({ where: { name: "Converted" } });
 
   const result: { month: string; rate: number; total: number; converted: number }[] = [];
   const now = new Date();
@@ -135,11 +141,14 @@ export async function getConversionRateByMonth(scope: DashboardScope, months = 6
     const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
     const [total, converted] = await Promise.all([
       db.lead.count({ where: { ...where, createdAt: { gte: start, lt: end } } }),
-      convertedStatus
-        ? db.lead.count({
-            where: { ...where, createdAt: { gte: start, lt: end }, statusId: convertedStatus.id },
-          })
-        : Promise.resolve(0),
+      // Converted = has any booking — see getLeadCounts above for the same reasoning.
+      db.lead.count({
+        where: {
+          ...where,
+          createdAt: { gte: start, lt: end },
+          bookings: { some: {} },
+        },
+      }),
     ]);
     result.push({
       month: start.toLocaleDateString("en-IN", { month: "short", year: "2-digit" }),

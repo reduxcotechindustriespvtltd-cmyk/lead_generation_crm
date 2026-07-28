@@ -2,27 +2,24 @@ import "server-only";
 import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 
-async function getConvertedStatusId() {
-  const status = await db.leadStatus.findUnique({ where: { name: "Converted" } });
-  return status?.id ?? null;
-}
+// A lead is "converted" once it has any booking — a Booking row already
+// represents a real reservation, and Booking.statusId is just one more
+// admin-configurable call-disposition value (same list as leads), not a
+// fixed Confirmed/Cancelled gate.
+const CONVERTED_WHERE = { bookings: { some: {} } };
 
 export async function getLeadsByCampaign() {
-  const convertedStatusId = await getConvertedStatusId();
-
   const rows = await db.lead.groupBy({
     by: ["campaignName"],
     where: { campaignName: { not: null } },
     _count: { _all: true },
   });
 
-  const converted = convertedStatusId
-    ? await db.lead.groupBy({
-        by: ["campaignName"],
-        where: { campaignName: { not: null }, statusId: convertedStatusId },
-        _count: { _all: true },
-      })
-    : [];
+  const converted = await db.lead.groupBy({
+    by: ["campaignName"],
+    where: { campaignName: { not: null }, ...CONVERTED_WHERE },
+    _count: { _all: true },
+  });
   const convertedMap = new Map(converted.map((c) => [c.campaignName, c._count._all]));
 
   return rows
@@ -63,8 +60,6 @@ export async function getLeadsByAd() {
 }
 
 export async function getLeadsBySalesExecutive() {
-  const convertedStatusId = await getConvertedStatusId();
-
   const users = await db.user.findMany({
     where: { role: "SALES_EXECUTIVE" },
     select: { id: true, name: true },
@@ -72,13 +67,11 @@ export async function getLeadsBySalesExecutive() {
 
   const [totals, converted] = await Promise.all([
     db.lead.groupBy({ by: ["assignedToId"], _count: { _all: true } }),
-    convertedStatusId
-      ? db.lead.groupBy({
-          by: ["assignedToId"],
-          where: { statusId: convertedStatusId },
-          _count: { _all: true },
-        })
-      : Promise.resolve([]),
+    db.lead.groupBy({
+      by: ["assignedToId"],
+      where: CONVERTED_WHERE,
+      _count: { _all: true },
+    }),
   ]);
 
   const totalMap = new Map(totals.map((t) => [t.assignedToId, t._count._all]));
@@ -122,10 +115,9 @@ export async function getResponseTimeStats() {
 }
 
 export async function getOverallConversionRate() {
-  const convertedStatusId = await getConvertedStatusId();
   const [total, converted] = await Promise.all([
     db.lead.count(),
-    convertedStatusId ? db.lead.count({ where: { statusId: convertedStatusId } }) : 0,
+    db.lead.count({ where: CONVERTED_WHERE }),
   ]);
   return {
     total,

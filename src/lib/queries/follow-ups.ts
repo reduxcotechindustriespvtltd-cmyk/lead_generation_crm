@@ -1,6 +1,8 @@
 import "server-only";
 import { db } from "@/lib/db";
+import { Prisma } from "@/generated/prisma/client";
 import type { LeadScope } from "@/lib/queries/leads";
+import type { FollowUpListQuery } from "@/lib/validations/follow-ups";
 
 export async function getFollowUpsGrouped(scope: LeadScope) {
   const startOfToday = new Date();
@@ -31,4 +33,70 @@ export async function getFollowUpsGrouped(scope: LeadScope) {
   const upcoming = followUps.filter((f) => f.dueAt >= startOfTomorrow);
 
   return { missed, today, upcoming };
+}
+
+// Powers the dedicated Follow-ups page: a flat, searchable, paginated table
+// filterable by the lead's enquiry date (createdAt) — a single date is just
+// enquiredFrom === enquiredTo, a range is both set independently.
+export async function listFollowUps(query: FollowUpListQuery, scope: LeadScope) {
+  const leadWhere: Prisma.LeadWhereInput = {};
+  if (scope.forcedAssignedToId) leadWhere.assignedToId = scope.forcedAssignedToId;
+  if (query.q) {
+    leadWhere.OR = [
+      { fullName: { contains: query.q, mode: "insensitive" } },
+      { phone: { contains: query.q, mode: "insensitive" } },
+    ];
+  }
+  if (query.enquiredFrom || query.enquiredTo) {
+    leadWhere.createdAt = {};
+    if (query.enquiredFrom) {
+      const start = new Date(query.enquiredFrom);
+      start.setHours(0, 0, 0, 0);
+      leadWhere.createdAt.gte = start;
+    }
+    if (query.enquiredTo) {
+      const end = new Date(query.enquiredTo);
+      end.setHours(23, 59, 59, 999);
+      leadWhere.createdAt.lte = end;
+    }
+  }
+
+  const where: Prisma.FollowUpWhereInput = { status: "PENDING", lead: leadWhere };
+
+  const orderBy: Prisma.FollowUpOrderByWithRelationInput =
+    query.sortBy === "fullName"
+      ? { lead: { fullName: query.sortDir } }
+      : query.sortBy === "createdAt"
+        ? { lead: { createdAt: query.sortDir } }
+        : { dueAt: query.sortDir };
+
+  const [followUps, total] = await Promise.all([
+    db.followUp.findMany({
+      where,
+      include: {
+        lead: {
+          select: {
+            id: true,
+            fullName: true,
+            phone: true,
+            createdAt: true,
+            status: { select: { name: true, color: true } },
+            assignedTo: { select: { id: true, name: true } },
+          },
+        },
+      },
+      orderBy,
+      skip: (query.page - 1) * query.pageSize,
+      take: query.pageSize,
+    }),
+    db.followUp.count({ where }),
+  ]);
+
+  return {
+    followUps,
+    total,
+    page: query.page,
+    pageSize: query.pageSize,
+    totalPages: Math.max(1, Math.ceil(total / query.pageSize)),
+  };
 }

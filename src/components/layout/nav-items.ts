@@ -2,7 +2,6 @@ import {
   LayoutDashboard,
   Users2,
   CalendarClock,
-  CalendarCheck2,
   BarChart3,
   IndianRupee,
   UserCog,
@@ -34,12 +33,6 @@ export const navItems: NavItem[] = [
     label: "Admin",
     icon: ShieldCheck,
     children: [
-      {
-        href: "/dashboard/bookings",
-        label: "Bookings",
-        icon: CalendarCheck2,
-        roles: ["ADMIN", "MANAGER"],
-      },
       {
         href: "/dashboard/admin/packages",
         label: "Packages",

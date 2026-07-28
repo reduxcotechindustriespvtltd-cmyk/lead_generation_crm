@@ -2,8 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, Moon, Search, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
+import { LogOut, Search } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { visibleNavItems } from "@/components/layout/nav-items";
 import type { UserRole } from "@/generated/prisma/client";
@@ -19,7 +18,6 @@ type Command = {
 
 export function CommandPalette({ role }: { role: UserRole }) {
   const router = useRouter();
-  const { setTheme, resolvedTheme } = useTheme();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
@@ -36,13 +34,6 @@ export function CommandPalette({ role }: { role: UserRole }) {
 
     const actionCommands: Command[] = [
       {
-        id: "toggle-theme",
-        label: resolvedTheme === "dark" ? "Switch to light mode" : "Switch to dark mode",
-        group: "Actions",
-        icon: resolvedTheme === "dark" ? Sun : Moon,
-        run: () => setTheme(resolvedTheme === "dark" ? "light" : "dark"),
-      },
-      {
         id: "logout",
         label: "Log out",
         group: "Actions",
@@ -57,7 +48,7 @@ export function CommandPalette({ role }: { role: UserRole }) {
     ];
 
     return [...navCommands, ...actionCommands];
-  }, [role, router, resolvedTheme, setTheme]);
+  }, [role, router]);
 
   const filtered = useMemo(() => {
     if (!query.trim()) return commands;

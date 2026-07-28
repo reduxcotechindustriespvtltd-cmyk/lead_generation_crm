@@ -1,24 +1,34 @@
 import { getCurrentUser } from "@/lib/auth/session";
-import { getFollowUpsGrouped } from "@/lib/queries/follow-ups";
+import { listFollowUps } from "@/lib/queries/follow-ups";
 import type { LeadScope } from "@/lib/queries/leads";
-import { FollowUpsSection } from "@/components/follow-ups/follow-ups-section";
+import { followUpListQuerySchema } from "@/lib/validations/follow-ups";
+import { FollowUpsToolbar } from "@/components/follow-ups/follow-ups-toolbar";
+import { FollowUpsTable } from "@/components/follow-ups/follow-ups-table";
 
-export default async function FollowUpsPage() {
+export default async function FollowUpsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const session = await getCurrentUser();
+  const sp = await searchParams;
+  const query = followUpListQuerySchema.parse(sp);
   const scope: LeadScope =
     session?.role === "SALES_EXECUTIVE" ? { forcedAssignedToId: session.sub } : {};
 
-  const { missed, today, upcoming } = await getFollowUpsGrouped(scope);
+  const result = await listFollowUps(query, scope);
   const showAssignee = session?.role !== "SALES_EXECUTIVE";
 
-  const serialize = (items: typeof missed) =>
-    items.map((f) => ({
-      id: f.id,
-      dueAt: f.dueAt.toISOString(),
-      note: f.note,
-      leadId: f.leadId,
-      lead: f.lead,
-    }));
+  const items = result.followUps.map((f) => ({
+    id: f.id,
+    dueAt: f.dueAt.toISOString(),
+    note: f.note,
+    leadId: f.leadId,
+    lead: {
+      ...f.lead,
+      createdAt: f.lead.createdAt.toISOString(),
+    },
+  }));
 
   return (
     <div className="flex flex-col gap-4">
@@ -31,27 +41,16 @@ export default async function FollowUpsPage() {
         </p>
       </div>
 
-      <FollowUpsSection
-        title="Missed"
-        variant="missed"
-        accent="red"
-        items={serialize(missed)}
-        emptyLabel="No missed follow-ups. Nice work!"
-        showAssignee={showAssignee}
-      />
-      <FollowUpsSection
-        title="Today"
-        variant="today"
-        accent="blue"
-        items={serialize(today)}
-        emptyLabel="No follow-ups scheduled for today."
-        showAssignee={showAssignee}
-      />
-      <FollowUpsSection
-        title="Upcoming"
-        variant="upcoming"
-        items={serialize(upcoming)}
-        emptyLabel="No upcoming follow-ups."
+      <FollowUpsToolbar />
+
+      <FollowUpsTable
+        items={items}
+        total={result.total}
+        page={result.page}
+        pageSize={result.pageSize}
+        totalPages={result.totalPages}
+        sortBy={query.sortBy}
+        sortDir={query.sortDir}
         showAssignee={showAssignee}
       />
     </div>

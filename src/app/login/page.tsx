@@ -42,7 +42,7 @@ export default async function LoginPage() {
       <div
         className="relative hidden w-full max-w-xl flex-col justify-between overflow-hidden p-10 text-white lg:flex"
         style={{
-          background: `linear-gradient(135deg, var(--brand-orange-dark), var(--brand-orange), var(--brand-teal))`,
+          background: "#061C19",
         }}
       >
         <div

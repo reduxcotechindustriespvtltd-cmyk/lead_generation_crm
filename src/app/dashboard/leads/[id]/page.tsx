@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth/session";
+import { can } from "@/lib/auth/rbac";
 import { getLeadDetail, type LeadScope } from "@/lib/queries/leads";
 import { LeadHeader } from "@/components/leads/lead-header";
 import { LeadTimeline } from "@/components/leads/lead-timeline";
@@ -16,7 +17,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const scope: LeadScope =
     session?.role === "SALES_EXECUTIVE" ? { forcedAssignedToId: session.sub } : {};
 
-  const [lead, statuses, users, activeWhatsAppAccountCount] = await Promise.all([
+  const [lead, statuses, users, activeWhatsAppAccountCount, packages] = await Promise.all([
     getLeadDetail(id, scope),
     db.leadStatus.findMany({ orderBy: { order: "asc" } }),
     db.user.findMany({
@@ -25,9 +26,30 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
       orderBy: { name: "asc" },
     }),
     db.whatsAppAccount.count({ where: { isActive: true } }),
+    db.package.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        name: true,
+        destination: true,
+        type: true,
+        price: true,
+        priceUnit: true,
+        maxGuests: true,
+        description: true,
+        imagePath: true,
+      },
+      orderBy: { order: "asc" },
+    }),
   ]);
 
   if (!lead || !session) notFound();
+
+  // Booking creation/editing has always been an ADMIN/MANAGER-only capability
+  // (see the old /dashboard/bookings API role checks) — preserved here now
+  // that it lives inline on the lead page instead of a separate page.
+  const canManageBookings = session.role !== "SALES_EXECUTIVE";
+  const canDeleteBookings = can(session.role, "deleteBooking");
 
   const timeline = (
     <LeadTimeline
@@ -45,68 +67,102 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
     <div className="mx-auto flex max-w-5xl flex-col gap-4">
       <LeadHeader lead={lead} statuses={statuses} />
 
+      <LeadBookingHistory
+        leadId={lead.id}
+        leadDefaults={{ fullName: lead.fullName, phone: lead.phone }}
+        packages={packages.map((p) => ({ ...p, price: p.price.toString() }))}
+        users={users}
+        statuses={statuses}
+        canManage={canManageBookings}
+        canDelete={canDeleteBookings}
+        bookings={lead.bookings.map((b) => ({
+          id: b.id,
+          guestName: b.guestName,
+          phone: b.phone,
+          email: b.email,
+          checkInDate: b.checkInDate.toISOString(),
+          checkOutDate: b.checkOutDate.toISOString(),
+          nights: b.nights,
+          stayType: b.stayType,
+          adultCount: b.adultCount,
+          kidsCount: b.kidsCount,
+          infantCount: b.infantCount,
+          adultCostPerPerson: b.adultCostPerPerson.toString(),
+          kidsCostPerPerson: b.kidsCostPerPerson.toString(),
+          vendorAmount: b.vendorAmount.toString(),
+          advance: b.advance.toString(),
+          balanceAmount: b.balanceAmount.toString(),
+          totalRevenue: b.totalRevenue.toString(),
+          profit: b.profit.toString(),
+          b2bAdultAmount: b.b2bAdultAmount.toString(),
+          b2bKidAmount: b.b2bKidAmount.toString(),
+          includesFood: b.includesFood,
+          notes: b.notes,
+          description: b.description,
+          resortName: b.resortName,
+          source: b.source,
+          location: b.location,
+          statusId: b.statusId,
+          status: b.status,
+          leadId: b.leadId,
+          assignedToId: b.assignedToId,
+          packageId: b.packageId,
+          packageName: b.packageName,
+          destination: b.destination,
+          attachmentPath: b.attachmentPath,
+          attachmentName: b.attachmentName,
+        }))}
+      />
+
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="flex flex-col gap-4">
-          <LeadNotes
-            leadId={lead.id}
-            notes={lead.notes.map((n) => ({
-              id: n.id,
-              content: n.content,
-              createdAt: n.createdAt.toISOString(),
-              userId: n.userId,
-              user: n.user,
-            }))}
-            users={users}
-            currentUserId={session.sub}
-          />
-          <LeadFollowUps
-            leadId={lead.id}
-            followUps={lead.followUps.map((f) => ({
-              id: f.id,
-              dueAt: f.dueAt.toISOString(),
-              note: f.note,
-              status: f.status,
-            }))}
-          />
-          <LeadBookingHistory
-            bookings={lead.bookings.map((b) => ({
-              id: b.id,
-              checkInDate: b.checkInDate.toISOString(),
-              checkOutDate: b.checkOutDate.toISOString(),
-              adultCount: b.adultCount,
-              kidsCount: b.kidsCount,
-              status: b.status,
-              totalRevenue: b.totalRevenue.toString(),
-              packageName: b.packageName,
-            }))}
-          />
-        </div>
-        {activeWhatsAppAccountCount > 0 ? (
-          <Tabs defaultValue="timeline">
-            <TabsList>
-              <TabsTrigger value="timeline">Timeline</TabsTrigger>
-              <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
-            </TabsList>
-            <TabsContent value="timeline">{timeline}</TabsContent>
-            <TabsContent value="whatsapp">
-              <LeadWhatsAppChat
-                leadId={lead.id}
-                initialMessages={lead.whatsAppMessages.map((m) => ({
-                  id: m.id,
-                  direction: m.direction,
-                  content: m.content,
-                  status: m.status,
-                  errorMessage: m.errorMessage,
-                  createdAt: m.createdAt.toISOString(),
-                  sentBy: m.sentBy,
-                }))}
-              />
-            </TabsContent>
-          </Tabs>
-        ) : (
-          timeline
-        )}
+        <LeadNotes
+          leadId={lead.id}
+          notes={lead.notes.map((n) => ({
+            id: n.id,
+            content: n.content,
+            createdAt: n.createdAt.toISOString(),
+            userId: n.userId,
+            user: n.user,
+          }))}
+          users={users}
+          currentUserId={session.sub}
+        />
+        <LeadFollowUps
+          leadId={lead.id}
+          followUps={lead.followUps.map((f) => ({
+            id: f.id,
+            dueAt: f.dueAt.toISOString(),
+            note: f.note,
+            status: f.status,
+          }))}
+        />
       </div>
+
+      {activeWhatsAppAccountCount > 0 ? (
+        <Tabs defaultValue="timeline">
+          <TabsList>
+            <TabsTrigger value="timeline">Timeline</TabsTrigger>
+            <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
+          </TabsList>
+          <TabsContent value="timeline">{timeline}</TabsContent>
+          <TabsContent value="whatsapp">
+            <LeadWhatsAppChat
+              leadId={lead.id}
+              initialMessages={lead.whatsAppMessages.map((m) => ({
+                id: m.id,
+                direction: m.direction,
+                content: m.content,
+                status: m.status,
+                errorMessage: m.errorMessage,
+                createdAt: m.createdAt.toISOString(),
+                sentBy: m.sentBy,
+              }))}
+            />
+          </TabsContent>
+        </Tabs>
+      ) : (
+        timeline
+      )}
     </div>
   );
 }

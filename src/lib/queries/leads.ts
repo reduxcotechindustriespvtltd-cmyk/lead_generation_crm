@@ -74,7 +74,10 @@ export async function getLeadDetail(id: string, scope: LeadScope) {
         orderBy: { createdAt: "asc" },
         include: { sentBy: { select: { id: true, name: true } } },
       },
-      bookings: { orderBy: { checkInDate: "desc" } },
+      bookings: {
+        orderBy: { checkInDate: "desc" },
+        include: { status: { select: { id: true, name: true, color: true } } },
+      },
     },
   });
 

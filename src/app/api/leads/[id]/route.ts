@@ -52,17 +52,13 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/leads/[id]
 
     if (input.statusId && input.statusId !== existing.statusId) {
       const newStatus = await db.leadStatus.findUnique({ where: { id: input.statusId } });
+      // Driven by the status's own isWon/isFinal flags, not its name — lead
+      // statuses are fully admin-configurable (Settings > Lead Statuses),
+      // so no particular name is guaranteed to exist.
       await logActivity({
         leadId: id,
         userId: session.sub,
-        type:
-          newStatus?.name === "Converted"
-            ? "CONVERTED"
-            : newStatus?.name === "Lost"
-              ? "MARKED_LOST"
-              : newStatus?.name === "Spam"
-                ? "MARKED_SPAM"
-                : "STATUS_CHANGED",
+        type: newStatus?.isWon ? "CONVERTED" : newStatus?.isFinal ? "MARKED_LOST" : "STATUS_CHANGED",
         description: `Status changed from ${existing.status.name} to ${newStatus?.name ?? "Unknown"}`,
       });
     }

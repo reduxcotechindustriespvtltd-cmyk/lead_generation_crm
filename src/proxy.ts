@@ -32,11 +32,7 @@ export function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
 
-    const managerAndAdminOnlyPrefixes = [
-      "/dashboard/analytics",
-      "/dashboard/earnings",
-      "/dashboard/bookings",
-    ];
+    const managerAndAdminOnlyPrefixes = ["/dashboard/analytics", "/dashboard/earnings"];
     if (
       managerAndAdminOnlyPrefixes.some((p) => pathname.startsWith(p)) &&
       session.role === "SALES_EXECUTIVE"
