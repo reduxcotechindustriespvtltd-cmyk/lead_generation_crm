@@ -1,0 +1,22 @@
+import { z } from "zod";
+
+const captionField = z
+  .string()
+  .trim()
+  .max(200)
+  .optional()
+  .or(z.literal(""))
+  .transform((v) => v || undefined);
+
+export const createGalleryVideoSchema = z.object({
+  caption: captionField,
+  order: z.coerce.number().int().optional(),
+});
+export type CreateGalleryVideoInput = z.infer<typeof createGalleryVideoSchema>;
+
+export const updateGalleryVideoSchema = z.object({
+  caption: captionField,
+  isActive: z.coerce.boolean().optional(),
+  order: z.coerce.number().int().optional(),
+});
+export type UpdateGalleryVideoInput = z.infer<typeof updateGalleryVideoSchema>;

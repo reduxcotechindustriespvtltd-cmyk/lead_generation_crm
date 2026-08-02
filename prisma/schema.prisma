@@ -775,6 +775,21 @@ model GalleryImage {
   @@map("gallery_images")
 }
 
+// Standalone gallery videos (not tied to a Package) — the video counterpart
+// of GalleryImage. Served via direct Supabase Storage URLs rather than the
+// /api/public/files proxy, same reasoning as PackageVideo.
+model GalleryVideo {
+  id        String   @id @default(cuid())
+  videoPath String
+  caption   String?
+  isActive  Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([isActive])
+  @@map("gallery_videos")
+}
+
 model Testimonial {
   id        String   @id @default(cuid())
   name      String

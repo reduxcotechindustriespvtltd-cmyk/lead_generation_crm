@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   PackageIcon,
   ImageIcon,
+  Video,
   MessageSquareQuote,
   type LucideIcon,
 } from "lucide-react";
@@ -43,6 +44,12 @@ export const navItems: NavItem[] = [
         href: "/dashboard/admin/gallery",
         label: "Gallery",
         icon: ImageIcon,
+        roles: ["ADMIN", "MANAGER"],
+      },
+      {
+        href: "/dashboard/admin/videos",
+        label: "Videos",
+        icon: Video,
         roles: ["ADMIN", "MANAGER"],
       },
       {
