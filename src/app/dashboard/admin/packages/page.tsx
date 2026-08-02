@@ -17,6 +17,8 @@ export default async function PackagesAdminPage() {
     name: pkg.name,
     type: pkg.type,
     price: pkg.price.toString(),
+    priceKid: pkg.priceKid.toString(),
+    priceInfant: pkg.priceInfant.toString(),
     priceUnit: pkg.priceUnit,
     maxGuests: pkg.maxGuests,
     description: pkg.description,

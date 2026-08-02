@@ -18,6 +18,8 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/packages/[
       name: formData.get("name") || undefined,
       type: formData.get("type") || undefined,
       price: formData.get("price") || undefined,
+      priceKid: formData.get("priceKid") || undefined,
+      priceInfant: formData.get("priceInfant") || undefined,
       priceUnit: formData.get("priceUnit") || undefined,
       maxGuests: formData.get("maxGuests") || undefined,
       description: formData.get("description") || undefined,

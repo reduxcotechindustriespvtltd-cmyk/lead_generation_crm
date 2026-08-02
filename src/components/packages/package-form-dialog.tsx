@@ -28,6 +28,8 @@ export type PackageRow = {
   name: string;
   type: string;
   price: string;
+  priceKid: string;
+  priceInfant: string;
   priceUnit: string;
   maxGuests: number;
   description: string;
@@ -74,6 +76,8 @@ export function PackageFormDialog({
           name: pkg.name,
           type: pkg.type,
           price: Number(pkg.price),
+          priceKid: Number(pkg.priceKid),
+          priceInfant: Number(pkg.priceInfant),
           priceUnit: pkg.priceUnit,
           maxGuests: pkg.maxGuests,
           description: pkg.description,
@@ -86,6 +90,8 @@ export function PackageFormDialog({
           name: "",
           type: "",
           price: 0,
+          priceKid: 0,
+          priceInfant: 0,
           priceUnit: "per night",
           maxGuests: 2,
           description: "",
@@ -129,6 +135,8 @@ export function PackageFormDialog({
       formData.set("name", values.name);
       formData.set("type", values.type);
       formData.set("price", String(values.price));
+      formData.set("priceKid", String(values.priceKid));
+      formData.set("priceInfant", String(values.priceInfant));
       formData.set("priceUnit", values.priceUnit);
       formData.set("maxGuests", String(values.maxGuests));
       formData.set("description", values.description);
@@ -238,6 +246,44 @@ export function PackageFormDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Price</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={field.value ?? ""}
+                        onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="priceKid"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Price (Kids)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={field.value ?? ""}
+                        onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="priceInfant"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Price (Infant)</FormLabel>
                     <FormControl>
                       <Input
                         type="number"

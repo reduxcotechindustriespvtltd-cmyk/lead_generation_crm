@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "packages" ADD COLUMN     "priceInfant" DECIMAL(12,2) NOT NULL DEFAULT 0,
+ADD COLUMN     "priceKid" DECIMAL(12,2) NOT NULL DEFAULT 0;

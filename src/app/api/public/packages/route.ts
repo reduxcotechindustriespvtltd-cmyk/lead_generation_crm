@@ -25,6 +25,8 @@ export async function GET(request: NextRequest) {
         name: pkg.name,
         type: pkg.type,
         price: Number(pkg.price),
+        priceKid: Number(pkg.priceKid),
+        priceInfant: Number(pkg.priceInfant),
         priceUnit: pkg.priceUnit,
         maxGuests: pkg.maxGuests,
         description: pkg.description,

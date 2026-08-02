@@ -73,7 +73,13 @@ export function PackagesTable({ packages }: { packages: PackageRow[] }) {
                 </TableCell>
                 <TableCell className="text-sm">{pkg.type}</TableCell>
                 <TableCell className="text-sm">
-                  ₹{Number(pkg.price).toLocaleString("en-IN")} {pkg.priceUnit}
+                  <div>
+                    ₹{Number(pkg.price).toLocaleString("en-IN")} {pkg.priceUnit}
+                  </div>
+                  <div className="text-muted-foreground text-xs">
+                    Kid ₹{Number(pkg.priceKid).toLocaleString("en-IN")} · Infant ₹
+                    {Number(pkg.priceInfant).toLocaleString("en-IN")}
+                  </div>
                 </TableCell>
                 <TableCell className="text-sm">{pkg.maxGuests}</TableCell>
                 <TableCell>
