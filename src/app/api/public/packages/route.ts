@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { handleApiError } from "@/lib/api-response";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import { getSupabasePublicUrl } from "@/lib/storage/supabase-file-storage";
 
 // Public, unauthenticated content feed for the gsb-holidays marketing site's
 // Packages page — this is the same data any visitor already sees rendered on
@@ -15,7 +16,10 @@ export async function GET(request: NextRequest) {
     const packages = await db.package.findMany({
       where: { isActive: true },
       orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-      include: { images: { orderBy: { order: "asc" } } },
+      include: {
+        images: { orderBy: { order: "asc" } },
+        videos: { orderBy: { order: "asc" } },
+      },
     });
 
     const origin = request.nextUrl.origin;
@@ -34,6 +38,7 @@ export async function GET(request: NextRequest) {
         image: `${origin}/api/public/files/${pkg.imagePath}`,
         images: pkg.images.map((img) => `${origin}/api/public/files/${img.imagePath}`),
         video: pkg.videoUrl ?? null,
+        videos: pkg.videos.map((vid) => getSupabasePublicUrl(vid.videoPath)),
       })),
     });
   } catch (error) {

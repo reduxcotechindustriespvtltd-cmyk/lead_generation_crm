@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { can } from "@/lib/auth/rbac";
 import { listPackages } from "@/lib/queries/packages";
+import { getSupabasePublicUrl } from "@/lib/storage/supabase-file-storage";
 import { PackagesToolbar } from "@/components/packages/packages-toolbar";
 import { PackagesTable } from "@/components/packages/packages-table";
 
@@ -28,6 +29,7 @@ export default async function PackagesAdminPage() {
     isActive: pkg.isActive,
     order: pkg.order,
     images: pkg.images.map((img) => ({ id: img.id, imagePath: img.imagePath })),
+    videos: pkg.videos.map((vid) => ({ id: vid.id, url: getSupabasePublicUrl(vid.videoPath) })),
   }));
 
   return (

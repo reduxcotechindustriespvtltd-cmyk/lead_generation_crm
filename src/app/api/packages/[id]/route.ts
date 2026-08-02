@@ -47,7 +47,10 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/packages/[
     const updated = await db.package.update({
       where: { id },
       data: { ...input, ...imageFields },
-      include: { images: { orderBy: { order: "asc" } } },
+      include: {
+        images: { orderBy: { order: "asc" } },
+        videos: { orderBy: { order: "asc" } },
+      },
     });
 
     return NextResponse.json({ package: updated });
@@ -61,12 +64,13 @@ export async function DELETE(_request: Request, ctx: RouteContext<"/api/packages
     await requireRole("ADMIN", "MANAGER");
     const { id } = await ctx.params;
 
-    const existing = await db.package.findUnique({ where: { id }, include: { images: true } });
+    const existing = await db.package.findUnique({ where: { id }, include: { images: true, videos: true } });
     if (!existing) return jsonError("Package not found", 404);
 
     await db.package.delete({ where: { id } });
     await deleteSupabaseFile(existing.imagePath);
     await Promise.all(existing.images.map((img) => deleteSupabaseFile(img.imagePath)));
+    await Promise.all(existing.videos.map((vid) => deleteSupabaseFile(vid.videoPath)));
 
     return NextResponse.json({ success: true });
   } catch (error) {

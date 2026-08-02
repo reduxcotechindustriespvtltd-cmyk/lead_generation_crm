@@ -722,6 +722,7 @@ model Package {
   updatedAt   DateTime @updatedAt
 
   images   PackageImage[]
+  videos   PackageVideo[]
   leads    Lead[]
   bookings Booking[]
 
@@ -742,6 +743,24 @@ model PackageImage {
 
   @@index([packageId])
   @@map("package_images")
+}
+
+// Uploaded gallery videos for a package's detail page, alongside the single
+// external videoUrl link. Stored in the same public Supabase bucket as
+// images, but served via direct Supabase Storage URLs (not the app's own
+// /api/public/files proxy) since that proxy buffers the whole file with no
+// HTTP Range support — bad for video seeking/scrubbing.
+model PackageVideo {
+  id        String   @id @default(cuid())
+  packageId String
+  videoPath String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  package Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@index([packageId])
+  @@map("package_videos")
 }
 
 model GalleryImage {

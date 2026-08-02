@@ -39,6 +39,7 @@ export type PackageRow = {
   isActive: boolean;
   order: number;
   images: { id: string; imagePath: string }[];
+  videos: { id: string; url: string }[];
 };
 
 /** Adds one gallery image to an already-created package — used both by the create flow (right after the package exists) and the edit flow. */
@@ -49,6 +50,17 @@ async function uploadGalleryImages(packageId: string, files: File[]) {
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new Error(data.error ?? "Failed to upload images");
+  }
+}
+
+/** Adds one gallery video to an already-created package — used both by the create flow (right after the package exists) and the edit flow. */
+async function uploadGalleryVideos(packageId: string, files: File[]) {
+  const formData = new FormData();
+  for (const file of files) formData.append("videos", file);
+  const res = await fetch(`/api/packages/${packageId}/videos`, { method: "POST", body: formData });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? "Failed to upload videos");
   }
 }
 
@@ -68,6 +80,8 @@ export function PackageFormDialog({
   const [file, setFile] = useState<File | null>(null);
   const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
   const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
+  const [galleryVideoFiles, setGalleryVideoFiles] = useState<File[]>([]);
+  const [deletingVideoId, setDeletingVideoId] = useState<string | null>(null);
 
   const form = useForm<PackageFormValues>({
     resolver: zodResolver(packageFormSchema),
@@ -118,6 +132,22 @@ export function PackageFormDialog({
     }
   }
 
+  async function handleDeleteExistingVideo(videoId: string) {
+    if (!pkg) return;
+    setDeletingVideoId(videoId);
+    try {
+      const res = await fetch(`/api/packages/${pkg.id}/videos/${videoId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error ?? "Failed to remove video");
+        return;
+      }
+      router.refresh();
+    } finally {
+      setDeletingVideoId(null);
+    }
+  }
+
   async function onSubmit(values: PackageFormValues) {
     if (mode === "create" && !file) {
       form.setError("root", { message: "An image is required" });
@@ -147,6 +177,7 @@ export function PackageFormDialog({
       if (file) formData.set("image", file);
       if (mode === "create") {
         for (const galleryFile of galleryFiles) formData.append("images", galleryFile);
+        for (const galleryVideoFile of galleryVideoFiles) formData.append("videos", galleryVideoFile);
       }
 
       const res = await fetch(mode === "create" ? "/api/packages" : `/api/packages/${pkg!.id}`, {
@@ -168,6 +199,13 @@ export function PackageFormDialog({
           toast.error(error instanceof Error ? error.message : "Failed to upload images");
         }
       }
+      if (mode === "edit" && galleryVideoFiles.length > 0) {
+        try {
+          await uploadGalleryVideos(pkg!.id, galleryVideoFiles);
+        } catch (error) {
+          toast.error(error instanceof Error ? error.message : "Failed to upload videos");
+        }
+      }
 
       toast.success(mode === "create" ? "Package created" : "Package updated");
       onOpenChange(false);
@@ -176,6 +214,7 @@ export function PackageFormDialog({
         setFile(null);
       }
       setGalleryFiles([]);
+      setGalleryVideoFiles([]);
       router.refresh();
     } catch {
       toast.error("Something went wrong. Please try again.");
@@ -460,6 +499,64 @@ export function PackageFormDialog({
                   }}
                 />
               </label>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Gallery Videos</label>
+
+              {mode === "edit" && pkg && pkg.videos.length > 0 && (
+                <div className="grid grid-cols-2 gap-2">
+                  {pkg.videos.map((vid) => (
+                    <div key={vid.id} className="group relative">
+                      <video src={vid.url} controls className="h-24 w-full rounded-md object-cover" />
+                      <button
+                        type="button"
+                        disabled={deletingVideoId === vid.id}
+                        onClick={() => handleDeleteExistingVideo(vid.id)}
+                        className="bg-destructive absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full text-white opacity-0 transition group-hover:opacity-100 disabled:opacity-60"
+                      >
+                        <X className="size-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {galleryVideoFiles.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {galleryVideoFiles.map((f, i) => (
+                    <span
+                      key={`${f.name}-${i}`}
+                      className="bg-muted flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs"
+                    >
+                      {f.name}
+                      <button
+                        type="button"
+                        onClick={() => setGalleryVideoFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                      >
+                        <X className="size-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <label className="border-input hover:bg-muted/50 flex w-fit cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm">
+                <Plus className="size-4" />
+                Add Videos
+                <input
+                  type="file"
+                  accept="video/mp4,video/webm,video/quicktime"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    const picked = Array.from(e.target.files ?? []);
+                    setGalleryVideoFiles((prev) => [...prev, ...picked]);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              <p className="text-muted-foreground text-xs">MP4, WebM, or MOV, up to 100MB each.</p>
             </div>
 
             <DialogFooter>

@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { requireRole } from "@/lib/auth/session";
 import { handleApiError, jsonError } from "@/lib/api-response";
 import { listPackages, generateUniquePackageSlug } from "@/lib/queries/packages";
-import { InvalidFileUploadError, saveSupabaseFile } from "@/lib/storage/supabase-file-storage";
+import { InvalidFileUploadError, saveSupabaseFile, saveSupabaseVideo } from "@/lib/storage/supabase-file-storage";
 import { createPackageSchema } from "@/lib/validations/packages";
 
 export async function GET() {
@@ -65,6 +65,20 @@ export async function POST(request: NextRequest) {
       throw error;
     }
 
+    // Additional gallery videos beyond the single external videoUrl link — optional, any number.
+    const galleryVideoFiles = formData.getAll("videos").filter((f): f is File => f instanceof File && f.size > 0);
+    const galleryVideos: { path: string }[] = [];
+    try {
+      for (const galleryVideoFile of galleryVideoFiles) {
+        galleryVideos.push(await saveSupabaseVideo(galleryVideoFile, "packages"));
+      }
+    } catch (error) {
+      if (error instanceof InvalidFileUploadError) {
+        return jsonError(error.message, 400);
+      }
+      throw error;
+    }
+
     const slug = await generateUniquePackageSlug(input.name);
 
     const pkg = await db.package.create({
@@ -86,8 +100,14 @@ export async function POST(request: NextRequest) {
         images: {
           create: galleryImages.map((img, i) => ({ imagePath: img.path, order: i })),
         },
+        videos: {
+          create: galleryVideos.map((vid, i) => ({ videoPath: vid.path, order: i })),
+        },
       },
-      include: { images: { orderBy: { order: "asc" } } },
+      include: {
+        images: { orderBy: { order: "asc" } },
+        videos: { orderBy: { order: "asc" } },
+      },
     });
 
     return NextResponse.json({ package: pkg }, { status: 201 });

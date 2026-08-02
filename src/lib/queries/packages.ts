@@ -5,7 +5,10 @@ import { db } from "@/lib/db";
 export async function listPackages() {
   return db.package.findMany({
     orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-    include: { images: { orderBy: { order: "asc" } } },
+    include: {
+      images: { orderBy: { order: "asc" } },
+      videos: { orderBy: { order: "asc" } },
+    },
   });
 }
 
