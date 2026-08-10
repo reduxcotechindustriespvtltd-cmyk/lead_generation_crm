@@ -22,11 +22,20 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export type PackageRow = {
   id: string;
   name: string;
   type: string;
+  destination: string | null;
   price: string;
   priceKid: string;
   priceInfant: string;
@@ -35,6 +44,10 @@ export type PackageRow = {
   description: string;
   amenities: string[];
   note: string[];
+  timings: string[];
+  mealOptions: string[];
+  activities: string[];
+  highlights: string[];
   extraTitle: string | null;
   extraContent: string | null;
   imagePath: string;
@@ -44,6 +57,9 @@ export type PackageRow = {
   images: { id: string; imagePath: string }[];
   videos: { id: string; url: string }[];
 };
+
+const PACKAGE_TYPES = ["Villa", "Farmhouse", "Resort", "Cottage", "Camping", "Glamping"] as const;
+const MEAL_OPTIONS = ["Veg", "Non-Veg"] as const;
 
 /** Adds one gallery image to an already-created package — used both by the create flow (right after the package exists) and the edit flow. */
 async function uploadGalleryImages(packageId: string, files: File[]) {
@@ -91,7 +107,8 @@ export function PackageFormDialog({
     defaultValues: pkg
       ? {
           name: pkg.name,
-          type: pkg.type,
+          type: pkg.type as (typeof PACKAGE_TYPES)[number],
+          destination: pkg.destination ?? "",
           price: Number(pkg.price),
           priceKid: Number(pkg.priceKid),
           priceInfant: Number(pkg.priceInfant),
@@ -100,6 +117,10 @@ export function PackageFormDialog({
           description: pkg.description,
           amenities: pkg.amenities.join("\n"),
           note: pkg.note.join("\n"),
+          timings: pkg.timings.join("\n"),
+          mealOptions: pkg.mealOptions,
+          activities: pkg.activities.join("\n"),
+          highlights: pkg.highlights.join("\n"),
           extraTitle: pkg.extraTitle ?? "",
           extraContent: pkg.extraContent ?? "",
           videoUrl: pkg.videoUrl ?? "",
@@ -108,7 +129,8 @@ export function PackageFormDialog({
         }
       : {
           name: "",
-          type: "",
+          type: "Villa",
+          destination: "",
           price: 0,
           priceKid: 0,
           priceInfant: 0,
@@ -117,6 +139,10 @@ export function PackageFormDialog({
           description: "",
           amenities: "",
           note: "",
+          timings: "",
+          mealOptions: [],
+          activities: "",
+          highlights: "",
           extraTitle: "",
           extraContent: "",
           videoUrl: "",
@@ -165,18 +191,21 @@ export function PackageFormDialog({
 
     setIsSubmitting(true);
     try {
-      const amenities = values.amenities
-        .split("\n")
-        .map((a) => a.trim())
-        .filter(Boolean);
-      const note = values.note
-        .split("\n")
-        .map((n) => n.trim())
-        .filter(Boolean);
+      const splitLines = (value: string) =>
+        value
+          .split("\n")
+          .map((line) => line.trim())
+          .filter(Boolean);
+      const amenities = splitLines(values.amenities);
+      const note = splitLines(values.note);
+      const timings = splitLines(values.timings);
+      const activities = splitLines(values.activities);
+      const highlights = splitLines(values.highlights);
 
       const formData = new FormData();
       formData.set("name", values.name);
       formData.set("type", values.type);
+      formData.set("destination", values.destination.trim());
       formData.set("price", String(values.price));
       formData.set("priceKid", String(values.priceKid));
       formData.set("priceInfant", String(values.priceInfant));
@@ -185,6 +214,10 @@ export function PackageFormDialog({
       formData.set("description", values.description);
       formData.set("amenities", JSON.stringify(amenities));
       formData.set("note", JSON.stringify(note));
+      formData.set("timings", JSON.stringify(timings));
+      formData.set("mealOptions", JSON.stringify(values.mealOptions));
+      formData.set("activities", JSON.stringify(activities));
+      formData.set("highlights", JSON.stringify(highlights));
       formData.set("extraTitle", values.extraTitle.trim());
       formData.set("extraContent", values.extraContent.trim());
       formData.set("videoUrl", values.videoUrl.trim());
@@ -270,8 +303,32 @@ export function PackageFormDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Type</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {PACKAGE_TYPES.map((t) => (
+                          <SelectItem key={t} value={t}>
+                            {t}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="destination"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Destination</FormLabel>
                     <FormControl>
-                      <Input placeholder="Villa, Cottage, Glamping..." {...field} />
+                      <Input placeholder="Lonavala, Karjat..." {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -401,6 +458,80 @@ export function PackageFormDialog({
                       <Textarea
                         rows={3}
                         placeholder={"Shown as bullet points on the package page\nLeave blank to hide this section"}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="timings"
+                render={({ field }) => (
+                  <FormItem className="col-span-2">
+                    <FormLabel>Check-in / Check-out Timings (one per line)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        rows={2}
+                        placeholder={"12:00 PM - 9:00 AM\n4:00 PM - 10:00 AM"}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="mealOptions"
+                render={({ field }) => (
+                  <FormItem className="col-span-2">
+                    <FormLabel>Meal</FormLabel>
+                    <div className="flex items-center gap-4">
+                      {MEAL_OPTIONS.map((option) => (
+                        <div key={option} className="flex items-center gap-2">
+                          <Checkbox
+                            checked={field.value.includes(option)}
+                            onCheckedChange={(checked) =>
+                              field.onChange(
+                                checked
+                                  ? [...field.value, option]
+                                  : field.value.filter((v) => v !== option)
+                              )
+                            }
+                          />
+                          <Label className="font-normal">{option}</Label>
+                        </div>
+                      ))}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="activities"
+                render={({ field }) => (
+                  <FormItem className="col-span-2">
+                    <FormLabel>Activities (one per line)</FormLabel>
+                    <FormControl>
+                      <Textarea rows={3} placeholder={"Cricket\nVolleyball\nBonfire"} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="highlights"
+                render={({ field }) => (
+                  <FormItem className="col-span-2">
+                    <FormLabel>Highlights (one per line)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        rows={3}
+                        placeholder={"Lakeside Cottages\nPrivate Swimming Pool"}
                         {...field}
                       />
                     </FormControl>

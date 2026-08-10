@@ -17,6 +17,7 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/packages/[
     const input = updatePackageSchema.parse({
       name: formData.get("name") || undefined,
       type: formData.get("type") || undefined,
+      destination: formData.has("destination") ? formData.get("destination") : undefined,
       price: formData.get("price") || undefined,
       priceKid: formData.get("priceKid") || undefined,
       priceInfant: formData.get("priceInfant") || undefined,
@@ -25,6 +26,10 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/packages/[
       description: formData.get("description") || undefined,
       amenities: formData.get("amenities") || undefined,
       note: formData.get("note") || undefined,
+      timings: formData.get("timings") || undefined,
+      mealOptions: formData.get("mealOptions") || undefined,
+      activities: formData.get("activities") || undefined,
+      highlights: formData.get("highlights") || undefined,
       extraTitle: formData.has("extraTitle") ? formData.get("extraTitle") : undefined,
       extraContent: formData.has("extraContent") ? formData.get("extraContent") : undefined,
       videoUrl: formData.has("videoUrl") ? formData.get("videoUrl") : undefined,

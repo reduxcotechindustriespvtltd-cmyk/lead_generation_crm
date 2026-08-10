@@ -38,9 +38,20 @@ const extraContentField = z
   .or(z.literal(""))
   .transform((v) => v || undefined);
 
+const destinationField = z
+  .string()
+  .trim()
+  .max(100)
+  .optional()
+  .or(z.literal(""))
+  .transform((v) => v || undefined);
+
+const PACKAGE_TYPES = ["Villa", "Farmhouse", "Resort", "Cottage", "Camping", "Glamping"] as const;
+
 const rawPackageFields = {
   name: z.string().trim().min(1, "Name is required").max(200),
-  type: z.string().trim().min(1, "Type is required").max(100),
+  type: z.enum(PACKAGE_TYPES, { message: "Select a package type" }),
+  destination: destinationField,
   price: z.coerce.number().min(0, "Price cannot be negative"),
   priceKid: z.coerce.number().min(0, "Price cannot be negative"),
   priceInfant: z.coerce.number().min(0, "Price cannot be negative"),
@@ -49,6 +60,10 @@ const rawPackageFields = {
   description: z.string().trim().min(1, "Description is required").max(2000),
   amenities: amenitiesField,
   note: amenitiesField,
+  timings: amenitiesField,
+  mealOptions: amenitiesField,
+  activities: amenitiesField,
+  highlights: amenitiesField,
   extraTitle: extraTitleField,
   extraContent: extraContentField,
   videoUrl: videoUrlField,
@@ -62,6 +77,10 @@ export const createPackageSchema = z.object({
   priceInfant: rawPackageFields.priceInfant.default(0),
   priceUnit: rawPackageFields.priceUnit.default("per night"),
   note: rawPackageFields.note.default([]),
+  timings: rawPackageFields.timings.default([]),
+  mealOptions: rawPackageFields.mealOptions.default([]),
+  activities: rawPackageFields.activities.default([]),
+  highlights: rawPackageFields.highlights.default([]),
   isActive: rawPackageFields.isActive.default(true),
   order: rawPackageFields.order.default(0),
 });
@@ -70,6 +89,7 @@ export type CreatePackageInput = z.infer<typeof createPackageSchema>;
 export const updatePackageSchema = z.object({
   name: rawPackageFields.name.optional(),
   type: rawPackageFields.type.optional(),
+  destination: rawPackageFields.destination,
   price: rawPackageFields.price.optional(),
   priceKid: rawPackageFields.priceKid.optional(),
   priceInfant: rawPackageFields.priceInfant.optional(),
@@ -78,6 +98,10 @@ export const updatePackageSchema = z.object({
   description: rawPackageFields.description.optional(),
   amenities: rawPackageFields.amenities.optional(),
   note: rawPackageFields.note.optional(),
+  timings: rawPackageFields.timings.optional(),
+  mealOptions: rawPackageFields.mealOptions.optional(),
+  activities: rawPackageFields.activities.optional(),
+  highlights: rawPackageFields.highlights.optional(),
   extraTitle: rawPackageFields.extraTitle,
   extraContent: rawPackageFields.extraContent,
   videoUrl: rawPackageFields.videoUrl,
@@ -86,11 +110,13 @@ export const updatePackageSchema = z.object({
 });
 export type UpdatePackageInput = z.infer<typeof updatePackageSchema>;
 
-// Client-form-only variant — amenities/note stay as raw newline-separated
-// text here and are split/JSON-encoded at submit time in the form dialog.
+// Client-form-only variant — amenities/note/timings/activities/highlights stay
+// as raw newline-separated text here and are split/JSON-encoded at submit
+// time in the form dialog. mealOptions stays as a string array (checkboxes).
 export const packageFormSchema = z.object({
   name: rawPackageFields.name,
   type: rawPackageFields.type,
+  destination: z.string(),
   price: z.number().min(0, "Price cannot be negative"),
   priceKid: z.number().min(0, "Price cannot be negative"),
   priceInfant: z.number().min(0, "Price cannot be negative"),
@@ -99,6 +125,10 @@ export const packageFormSchema = z.object({
   description: rawPackageFields.description,
   amenities: z.string(),
   note: z.string(),
+  timings: z.string(),
+  mealOptions: z.array(z.string()),
+  activities: z.string(),
+  highlights: z.string(),
   extraTitle: z.string(),
   extraContent: z.string(),
   videoUrl: z.string(),

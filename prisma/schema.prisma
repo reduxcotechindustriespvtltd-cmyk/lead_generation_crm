@@ -721,6 +721,15 @@ model Package {
   // one entry per line, same shape/handling as amenities. Hidden entirely
   // on the site when empty.
   note         String[] @default([])
+  // Check-in/check-out windows, one entry per line (e.g. "12:00 PM - 9:00 AM
+  // (next day)") — a package can list more than one applicable time slot.
+  timings      String[] @default([])
+  // Meal options offered, e.g. ["Veg"], ["Non-Veg"], or both.
+  mealOptions  String[] @default([])
+  // On-site activities, one per line (e.g. "Cricket", "Volleyball").
+  activities   String[] @default([])
+  // Standout highlights shown as tags, one per line (e.g. "Lakeside Cottages").
+  highlights   String[] @default([])
   // Optional extra section (title + body) rendered on the package detail
   // page below "What's included" — admin-authored, package-specific.
   extraTitle   String?
