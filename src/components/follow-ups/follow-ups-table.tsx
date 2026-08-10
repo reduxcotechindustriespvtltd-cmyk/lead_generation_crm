@@ -104,7 +104,9 @@ export function FollowUpsTable({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
-  const hasActiveFilters = ["q", "enquiredFrom", "enquiredTo"].some((key) => searchParams.get(key));
+  const hasActiveFilters = ["q", "status", "enquiredFrom", "enquiredTo"].some((key) =>
+    searchParams.get(key)
+  );
 
   function updateParams(updates: Record<string, string | null>) {
     const params = new URLSearchParams(searchParams.toString());

@@ -6,13 +6,6 @@ import { toast } from "sonner";
 import { Phone, Mail, MessageCircle, Pencil, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Dialog,
   DialogContent,
   DialogFooter,
@@ -21,10 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LeadStatusBadge } from "@/components/leads/lead-status-badge";
 import { SourceBadge } from "@/components/leads/source-badge";
-
-type StatusOption = { id: string; name: string; color: string };
 
 // No photo upload for leads — an initials avatar is the pragmatic default.
 function initials(name: string) {
@@ -34,7 +24,6 @@ function initials(name: string) {
 
 export function LeadHeader({
   lead,
-  statuses,
 }: {
   lead: {
     id: string;
@@ -43,7 +32,6 @@ export function LeadHeader({
     email: string | null;
     city: string | null;
     state: string | null;
-    statusId: string;
     assignedTo: { id: string; name: string } | null;
     source: string;
     packageInterest: string | null;
@@ -52,7 +40,6 @@ export function LeadHeader({
     adName: string | null;
     formName: string | null;
   };
-  statuses: StatusOption[];
 }) {
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
@@ -116,31 +103,9 @@ export function LeadHeader({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Select value={lead.statusId} onValueChange={(v) => patch({ statusId: v })}>
-            <SelectTrigger className="w-[160px]">
-              <SelectValue>
-                {(() => {
-                  const current = statuses.find((s) => s.id === lead.statusId);
-                  return current ? (
-                    <LeadStatusBadge name={current.name} color={current.color} />
-                  ) : null;
-                })()}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {statuses.map((s) => (
-                <SelectItem key={s.id} value={s.id}>
-                  {s.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <span className="text-muted-foreground text-sm">
-            {lead.assignedTo?.name ?? "Unassigned"}
-          </span>
-        </div>
+        <span className="text-muted-foreground text-sm">
+          {lead.assignedTo?.name ?? "Unassigned"}
+        </span>
       </div>
 
       <div className="flex flex-wrap items-center gap-2 border-t pt-4">

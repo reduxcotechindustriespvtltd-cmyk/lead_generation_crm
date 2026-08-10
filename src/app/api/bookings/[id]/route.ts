@@ -79,6 +79,7 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/bookings/[
       b2bAdultAmount: input.b2bAdultAmount ?? existing.b2bAdultAmount,
       b2bKidAmount: input.b2bKidAmount ?? existing.b2bKidAmount,
       advance: input.advance ?? existing.advance,
+      stayType: input.stayType === "" ? null : input.stayType ?? existing.stayType,
     });
 
     let attachmentFields: Record<string, unknown> = {};
@@ -146,6 +147,15 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/bookings/[
         ...attachmentFields,
       },
     });
+
+    // The booking form is the only place status is edited for a lead now —
+    // whichever status was just picked there becomes the lead's status too.
+    if (input.statusId !== undefined && updated.leadId) {
+      await db.lead.update({
+        where: { id: updated.leadId },
+        data: { statusId: input.statusId, lastActivityAt: new Date() },
+      });
+    }
 
     return NextResponse.json({ booking: updated });
   } catch (error) {

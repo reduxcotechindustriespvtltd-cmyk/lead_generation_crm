@@ -303,6 +303,7 @@ model LeadStatus {
   isDefault Boolean  @default(false)
   isFinal   Boolean  @default(false) // e.g. Converted, Lost, Spam
   isWon     Boolean  @default(false) // e.g. Converted (for conversion-rate math)
+  requiresFollowUp Boolean @default(false) // e.g. Follow-up, Call Back — shows a follow-up date picker when selected
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -366,6 +367,11 @@ model Lead {
   followUpDate  DateTime?
   isDuplicate   Boolean   @default(false)
   duplicateOfId String?
+
+  // Sequential invoice number issued when this lead is created via the
+  // public website inquiry form (see InvoiceCounter) — null for leads
+  // created by other sources (manual entry, Meta webhook, etc.).
+  invoiceNumber String? @unique
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -448,10 +454,10 @@ model Booking {
 
   // Server-computed on every create/update via calculateBookingFinancials() —
   // never accepted directly from client input.
-  totalRevenue   Decimal @db.Decimal(12, 2)
-  profit         Decimal @db.Decimal(12, 2)
-  advance        Decimal @default(0) @db.Decimal(12, 2)
-  balanceAmount  Decimal @db.Decimal(12, 2)
+  totalRevenue  Decimal @db.Decimal(12, 2)
+  profit        Decimal @db.Decimal(12, 2)
+  advance       Decimal @default(0) @db.Decimal(12, 2)
+  balanceAmount Decimal @db.Decimal(12, 2)
 
   includesFood Boolean @default(false)
   notes        String?
@@ -696,30 +702,38 @@ model AuditLog {
 // ─────────────────────────────────────────────────────────────
 
 model Package {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  name        String
-  type        String
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  name         String
+  type         String
   // Free-text destination (e.g. "Lonavala", "Karjat") rather than an enum,
   // so ops can add destinations without a migration — mirrors the same
   // handful of destinations used on the gsb-holidays site's nav/filters.
-  destination String?
-  price       Decimal  @db.Decimal(12, 2)
-  priceKid    Decimal  @default(0) @db.Decimal(12, 2)
-  priceInfant Decimal  @default(0) @db.Decimal(12, 2)
-  priceUnit   String   @default("per night")
-  maxGuests   Int      @default(2)
-  description String
-  amenities   String[] @default([])
-  imagePath   String
+  destination  String?
+  price        Decimal  @db.Decimal(12, 2)
+  priceKid     Decimal  @default(0) @db.Decimal(12, 2)
+  priceInfant  Decimal  @default(0) @db.Decimal(12, 2)
+  priceUnit    String   @default("per night")
+  maxGuests    Int      @default(2)
+  description  String
+  amenities    String[] @default([])
+  // Free-text notes shown as a bulleted list on the package detail page —
+  // one entry per line, same shape/handling as amenities. Hidden entirely
+  // on the site when empty.
+  note         String[] @default([])
+  // Optional extra section (title + body) rendered on the package detail
+  // page below "What's included" — admin-authored, package-specific.
+  extraTitle   String?
+  extraContent String?
+  imagePath    String
   // A YouTube/Vimeo link or direct video file URL — not stored in Tigris like
   // images, since serving large video well needs HTTP Range support the file
   // route doesn't have. gsb-holidays embeds it (iframe or <video>) as-is.
-  videoUrl    String?
-  isActive    Boolean  @default(true)
-  order       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  videoUrl     String?
+  isActive     Boolean  @default(true)
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   images   PackageImage[]
   videos   PackageVideo[]
@@ -761,6 +775,18 @@ model PackageVideo {
 
   @@index([packageId])
   @@map("package_videos")
+}
+
+// Singleton row (id is always "global") backing the sequential invoice
+// number issued to website inquiries (see generateInvoiceNumber in
+// src/lib/invoice.ts). Never resets — counts up forever across all time;
+// the date embedded in the formatted invoice number is just a timestamp.
+model InvoiceCounter {
+  id         String   @id @default("global")
+  lastNumber Int      @default(0)
+  updatedAt  DateTime @updatedAt
+
+  @@map("invoice_counters")
 }
 
 model GalleryImage {

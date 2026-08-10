@@ -8,6 +8,21 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const STATUS_OPTIONS = [
+  { value: "PENDING", label: "Pending" },
+  { value: "DONE", label: "Done" },
+  { value: "MISSED", label: "Missed" },
+  { value: "CANCELLED", label: "Cancelled" },
+  { value: "ALL", label: "All Statuses" },
+];
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
@@ -75,6 +90,24 @@ export function FollowUpsToolbar() {
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
+
+      <Select
+        value={searchParams.get("status") ?? "PENDING"}
+        onValueChange={(v) => updateParams({ status: v })}
+      >
+        <SelectTrigger className="w-[150px]">
+          <SelectValue placeholder="Status">
+            {(v: string) => STATUS_OPTIONS.find((s) => s.value === v)?.label ?? "Status"}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          {STATUS_OPTIONS.map((s) => (
+            <SelectItem key={s.value} value={s.value}>
+              {s.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
       <Popover>
         <PopoverTrigger render={<Button variant="outline" className="justify-start font-normal" />}>

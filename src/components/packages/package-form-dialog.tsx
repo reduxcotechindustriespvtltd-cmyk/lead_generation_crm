@@ -34,6 +34,9 @@ export type PackageRow = {
   maxGuests: number;
   description: string;
   amenities: string[];
+  note: string[];
+  extraTitle: string | null;
+  extraContent: string | null;
   imagePath: string;
   videoUrl: string | null;
   isActive: boolean;
@@ -96,6 +99,9 @@ export function PackageFormDialog({
           maxGuests: pkg.maxGuests,
           description: pkg.description,
           amenities: pkg.amenities.join("\n"),
+          note: pkg.note.join("\n"),
+          extraTitle: pkg.extraTitle ?? "",
+          extraContent: pkg.extraContent ?? "",
           videoUrl: pkg.videoUrl ?? "",
           isActive: pkg.isActive,
           order: pkg.order,
@@ -110,6 +116,9 @@ export function PackageFormDialog({
           maxGuests: 2,
           description: "",
           amenities: "",
+          note: "",
+          extraTitle: "",
+          extraContent: "",
           videoUrl: "",
           isActive: true,
           order: 0,
@@ -160,6 +169,10 @@ export function PackageFormDialog({
         .split("\n")
         .map((a) => a.trim())
         .filter(Boolean);
+      const note = values.note
+        .split("\n")
+        .map((n) => n.trim())
+        .filter(Boolean);
 
       const formData = new FormData();
       formData.set("name", values.name);
@@ -171,6 +184,9 @@ export function PackageFormDialog({
       formData.set("maxGuests", String(values.maxGuests));
       formData.set("description", values.description);
       formData.set("amenities", JSON.stringify(amenities));
+      formData.set("note", JSON.stringify(note));
+      formData.set("extraTitle", values.extraTitle.trim());
+      formData.set("extraContent", values.extraContent.trim());
       formData.set("videoUrl", values.videoUrl.trim());
       formData.set("isActive", String(values.isActive));
       formData.set("order", String(values.order));
@@ -370,6 +386,49 @@ export function PackageFormDialog({
                     <FormLabel>Amenities (one per line)</FormLabel>
                     <FormControl>
                       <Textarea rows={3} placeholder={"Private deck\nAC bedrooms\nLake view"} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="note"
+                render={({ field }) => (
+                  <FormItem className="col-span-2">
+                    <FormLabel>Note (one per line, optional)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        rows={3}
+                        placeholder={"Shown as bullet points on the package page\nLeave blank to hide this section"}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="extraTitle"
+                render={({ field }) => (
+                  <FormItem className="col-span-2">
+                    <FormLabel>Extra Section Title (optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. Cancellation Policy" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="extraContent"
+                render={({ field }) => (
+                  <FormItem className="col-span-2">
+                    <FormLabel>Extra Section Content</FormLabel>
+                    <FormControl>
+                      <Textarea rows={3} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

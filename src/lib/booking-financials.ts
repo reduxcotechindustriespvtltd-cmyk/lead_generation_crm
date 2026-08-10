@@ -9,6 +9,7 @@ type BookingFinancialsInput = {
   b2bAdultAmount: Prisma.Decimal | number | string;
   b2bKidAmount: Prisma.Decimal | number | string;
   advance: Prisma.Decimal | number | string;
+  stayType?: string | null;
 };
 
 /** Single source of truth for booking money math — always recomputed server-side, never trusted from client input. */
@@ -18,6 +19,18 @@ export function calculateBookingFinancials(input: BookingFinancialsInput) {
   const b2bAdultAmount = new Prisma.Decimal(input.b2bAdultAmount);
   const b2bKidAmount = new Prisma.Decimal(input.b2bKidAmount);
   const advance = new Prisma.Decimal(input.advance);
+
+  // Villas are priced per-stay (typically covering ~15-20 guests), not
+  // per-person/per-night like every other stay type — so the "Per Person"/
+  // "B2B Per Adult" fields are reused to hold the manually-entered total
+  // amount and total vendor amount directly, with no multiplication.
+  if (input.stayType === "VILLA") {
+    const totalRevenue = adultCost;
+    const vendorAmount = b2bAdultAmount;
+    const profit = totalRevenue.minus(vendorAmount);
+    const balanceAmount = totalRevenue.minus(advance);
+    return { totalRevenue, vendorAmount, profit, balanceAmount };
+  }
 
   // Per Person / Per Kid amounts (both customer-facing and B2B) are
   // per-night rates. Total Vendor Amount is derived from the B2B rates the

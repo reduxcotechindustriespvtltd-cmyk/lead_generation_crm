@@ -111,9 +111,14 @@ export function LeadsTable({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
-  const hasActiveFilters = ["q", "statusId", "source", "assignedToId"].some((key) =>
-    searchParams.get(key)
-  );
+  const hasActiveFilters = [
+    "q",
+    "statusId",
+    "source",
+    "assignedToId",
+    "createdFrom",
+    "createdTo",
+  ].some((key) => searchParams.get(key));
 
   function updateParams(updates: Record<string, string | null>) {
     const params = new URLSearchParams(searchParams.toString());

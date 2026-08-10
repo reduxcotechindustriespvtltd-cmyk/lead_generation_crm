@@ -17,8 +17,8 @@ const db = new PrismaClient({ adapter });
 const LEAD_STATUSES = [
   { name: "Unassigned", color: "#6b7280", order: 0, isDefault: true },
   { name: "Assigned", color: "#3b82f6", order: 1 },
-  { name: "Follow-up", color: "#f97316", order: 2 },
-  { name: "Call Back", color: "#eab308", order: 3 },
+  { name: "Follow-up", color: "#f97316", order: 2, requiresFollowUp: true },
+  { name: "Call Back", color: "#eab308", order: 3, requiresFollowUp: true },
   { name: "Ringing", color: "#06b6d4", order: 4 },
   { name: "Busy", color: "#f59e0b", order: 5 },
   { name: "Switch Off", color: "#64748b", order: 6 },

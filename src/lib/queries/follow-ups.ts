@@ -61,7 +61,14 @@ export async function listFollowUps(query: FollowUpListQuery, scope: LeadScope) 
     }
   }
 
-  const where: Prisma.FollowUpWhereInput = { status: "PENDING", lead: leadWhere };
+  // No filter chosen keeps today's default view (Pending only); "ALL" is an
+  // explicit request to see every status, distinct from that default.
+  const statusFilter =
+    query.status === "ALL" ? undefined : query.status ?? "PENDING";
+  const where: Prisma.FollowUpWhereInput = {
+    ...(statusFilter ? { status: statusFilter } : {}),
+    lead: leadWhere,
+  };
 
   const orderBy: Prisma.FollowUpOrderByWithRelationInput =
     query.sortBy === "fullName"

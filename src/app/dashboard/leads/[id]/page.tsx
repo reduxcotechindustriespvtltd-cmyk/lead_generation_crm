@@ -5,8 +5,6 @@ import { can } from "@/lib/auth/rbac";
 import { getLeadDetail, type LeadScope } from "@/lib/queries/leads";
 import { LeadHeader } from "@/components/leads/lead-header";
 import { LeadTimeline } from "@/components/leads/lead-timeline";
-import { LeadNotes } from "@/components/leads/lead-notes";
-import { LeadFollowUps } from "@/components/leads/lead-follow-ups";
 import { LeadBookingHistory } from "@/components/leads/lead-booking-history";
 import { LeadWhatsAppChat } from "@/components/leads/lead-whatsapp-chat";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -65,7 +63,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-4">
-      <LeadHeader lead={lead} statuses={statuses} />
+      <LeadHeader lead={lead} />
 
       <LeadBookingHistory
         leadId={lead.id}
@@ -113,30 +111,6 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           attachmentName: b.attachmentName,
         }))}
       />
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <LeadNotes
-          leadId={lead.id}
-          notes={lead.notes.map((n) => ({
-            id: n.id,
-            content: n.content,
-            createdAt: n.createdAt.toISOString(),
-            userId: n.userId,
-            user: n.user,
-          }))}
-          users={users}
-          currentUserId={session.sub}
-        />
-        <LeadFollowUps
-          leadId={lead.id}
-          followUps={lead.followUps.map((f) => ({
-            id: f.id,
-            dueAt: f.dueAt.toISOString(),
-            note: f.note,
-            status: f.status,
-          }))}
-        />
-      </div>
 
       {activeWhatsAppAccountCount > 0 ? (
         <Tabs defaultValue="timeline">

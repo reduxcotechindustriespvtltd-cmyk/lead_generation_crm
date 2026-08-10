@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ChevronDown, Loader2, Paperclip, Plus, X } from "lucide-react";
+import { Loader2, Paperclip, X } from "lucide-react";
 
 import { bookingFormSchema, type BookingFormValues } from "@/lib/validations/bookings";
 import { Button } from "@/components/ui/button";
@@ -44,7 +44,7 @@ type PackageOption = {
   imagePath: string;
 };
 type UserOption = { id: string; name: string };
-type StatusOption = { id: string; name: string; color: string };
+type StatusOption = { id: string; name: string; color: string; requiresFollowUp: boolean };
 
 export type BookingRow = {
   id: string;
@@ -131,7 +131,19 @@ function previewFinancials(input: {
   b2bAdultAmount: number;
   b2bKidAmount: number;
   advance: number;
+  isVilla: boolean;
 }) {
+  // Villas are priced per-stay (manually entered total), not per-person/
+  // per-night — see calculateBookingFinancials in booking-financials.ts,
+  // which this preview mirrors.
+  if (input.isVilla) {
+    const totalRevenue = input.adultCostPerPerson;
+    const vendorAmount = input.b2bAdultAmount;
+    const profit = totalRevenue - vendorAmount;
+    const balanceAmount = totalRevenue - input.advance;
+    return { totalRevenue, vendorAmount, profit, balanceAmount };
+  }
+
   const totalRevenue =
     (input.adultCount * input.adultCostPerPerson + input.kidsCount * input.kidsCostPerPerson) *
     input.nights;
@@ -176,9 +188,6 @@ export function BookingForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [removeAttachment, setRemoveAttachment] = useState(false);
-  // Create mode starts collapsed to a single trigger button; edit mode (the
-  // user already chose to edit a specific booking) always opens expanded.
-  const [expanded, setExpanded] = useState(mode === "edit");
 
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
@@ -249,6 +258,8 @@ export function BookingForm({
     watchedCheckInDate,
     watchedCheckOutDate,
     watchedPackageId,
+    watchedStatusId,
+    watchedStayType,
   ] = form.watch([
     "nights",
     "adultCount",
@@ -261,9 +272,26 @@ export function BookingForm({
     "checkInDate",
     "checkOutDate",
     "packageId",
+    "statusId",
+    "stayType",
   ]);
 
   const selectedPackage = packages.find((p) => p.id === watchedPackageId);
+  const selectedStatus = statuses.find((s) => s.id === watchedStatusId);
+  const isVilla = watchedStayType === "VILLA";
+
+  const [followUpAt, setFollowUpAt] = useState("");
+  const [followUpNote, setFollowUpNote] = useState("");
+
+  // Villas don't split cost by kid vs adult — zero out the kid-specific
+  // rates when switching to Villa so no stale value lingers unused.
+  useEffect(() => {
+    if (isVilla) {
+      form.setValue("kidsCostPerPerson", 0);
+      form.setValue("b2bKidAmount", 0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isVilla]);
 
   // Nights is derived from the date range whenever both dates are set —
   // check-out is always forward of check-in (enforced by the schema
@@ -287,6 +315,7 @@ export function BookingForm({
     b2bAdultAmount: numberOr(Number(watchedB2BAdult), 0),
     b2bKidAmount: numberOr(Number(watchedB2BKid), 0),
     advance: numberOr(Number(watchedAdvance), 0),
+    isVilla,
   });
 
   async function onSubmit(values: BookingFormValues) {
@@ -332,12 +361,32 @@ export function BookingForm({
         return;
       }
 
+      // Selecting a "requires follow-up" status (e.g. Follow-up, Call Back)
+      // schedules the date/time picked below via the same endpoint the old
+      // per-lead Follow-ups panel used — it also syncs Lead.followUpDate.
+      const leadIdForFollowUp = values.leadId || lockedLeadId;
+      if (selectedStatus?.requiresFollowUp && followUpAt && leadIdForFollowUp) {
+        const followUpRes = await fetch(`/api/leads/${leadIdForFollowUp}/follow-ups`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            dueAt: new Date(followUpAt).toISOString(),
+            note: followUpNote || undefined,
+          }),
+        });
+        if (!followUpRes.ok) {
+          const data = await followUpRes.json().catch(() => ({}));
+          toast.error(data.error ?? "Booking saved, but the follow-up date failed to save");
+        }
+      }
+
       toast.success(mode === "create" ? "Booking created" : "Booking updated");
       if (mode === "create") {
         form.reset();
         setFile(null);
-        setExpanded(false);
       }
+      setFollowUpAt("");
+      setFollowUpNote("");
       router.refresh();
       onDone?.();
     } catch {
@@ -347,40 +396,11 @@ export function BookingForm({
     }
   }
 
-  if (mode === "create" && !expanded) {
-    return (
-      <Card>
-        <CardContent>
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            onClick={() => setExpanded(true)}
-          >
-            <Plus />
-            Create Booking
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between text-base">
+        <CardTitle className="text-base">
           {mode === "create" ? "Add a New Booking" : "Edit Booking"}
-          {mode === "create" && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              title="Collapse"
-              onClick={() => setExpanded(false)}
-            >
-              <ChevronDown />
-            </Button>
-          )}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -708,7 +728,7 @@ export function BookingForm({
                 name="adultCostPerPerson"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Per Person Amount</FormLabel>
+                    <FormLabel>{isVilla ? "Total Amount" : "Per Person Amount"}</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -722,31 +742,33 @@ export function BookingForm({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="kidsCostPerPerson"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Per Kid Amount</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={field.value ?? ""}
-                        onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {!isVilla && (
+                <FormField
+                  control={form.control}
+                  name="kidsCostPerPerson"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Per Kid Amount</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={field.value ?? ""}
+                          onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               <FormField
                 control={form.control}
                 name="b2bAdultAmount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>B2B Per Adult</FormLabel>
+                    <FormLabel>{isVilla ? "Total Vendor Amount" : "B2B Per Adult"}</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -760,25 +782,27 @@ export function BookingForm({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="b2bKidAmount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>B2B Per Kid</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={field.value ?? ""}
-                        onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {!isVilla && (
+                <FormField
+                  control={form.control}
+                  name="b2bKidAmount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>B2B Per Kid</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={field.value ?? ""}
+                          onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <FormField
                 control={form.control}
@@ -907,6 +931,27 @@ export function BookingForm({
               </div>
             )}
 
+            {selectedStatus?.requiresFollowUp && (
+              <div className="grid grid-cols-2 gap-3 rounded-lg border p-3 sm:grid-cols-3">
+                <div className="space-y-1.5">
+                  <Label>Follow-up Date &amp; Time</Label>
+                  <Input
+                    type="datetime-local"
+                    value={followUpAt}
+                    onChange={(e) => setFollowUpAt(e.target.value)}
+                  />
+                </div>
+                <div className="col-span-2 space-y-1.5">
+                  <Label>Follow-up Note (optional)</Label>
+                  <Input
+                    placeholder="Note for the follow-up"
+                    value={followUpNote}
+                    onChange={(e) => setFollowUpNote(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+
             <FormField
               control={form.control}
               name="notes"
@@ -992,18 +1037,13 @@ export function BookingForm({
             </div>
 
             <div className="flex justify-end gap-2">
-              {mode === "edit" && onCancel && (
-                <Button type="button" variant="outline" onClick={onCancel}>
-                  Cancel
-                </Button>
-              )}
-              {mode === "create" && (
+              {onCancel && (
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => {
-                    form.reset();
-                    setExpanded(false);
+                    if (mode === "create") form.reset();
+                    onCancel();
                   }}
                 >
                   Cancel

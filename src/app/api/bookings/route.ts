@@ -115,6 +115,15 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // The booking form is the only place status is edited for a lead now —
+    // whichever status was just picked there becomes the lead's status too.
+    if (input.leadId) {
+      await db.lead.update({
+        where: { id: input.leadId },
+        data: { statusId: input.statusId, lastActivityAt: new Date() },
+      });
+    }
+
     return NextResponse.json({ booking }, { status: 201 });
   } catch (error) {
     return handleApiError(error);

@@ -19,6 +19,20 @@ export function buildLeadWhere(query: LeadListQuery, scope: LeadScope): Prisma.L
   if (query.statusId) where.statusId = query.statusId;
   if (query.source) where.source = query.source;
 
+  if (query.createdFrom || query.createdTo) {
+    where.createdAt = {};
+    if (query.createdFrom) {
+      const start = new Date(query.createdFrom);
+      start.setHours(0, 0, 0, 0);
+      where.createdAt.gte = start;
+    }
+    if (query.createdTo) {
+      const end = new Date(query.createdTo);
+      end.setHours(23, 59, 59, 999);
+      where.createdAt.lte = end;
+    }
+  }
+
   if (scope.forcedAssignedToId) {
     where.assignedToId = scope.forcedAssignedToId;
   } else if (query.assignedToId) {

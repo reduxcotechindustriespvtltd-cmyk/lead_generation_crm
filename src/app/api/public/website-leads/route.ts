@@ -6,6 +6,7 @@ import { logActivity } from "@/lib/activity";
 import { getNextRoundRobinAssignee } from "@/lib/assignment";
 import { revalidateLeadDependents } from "@/lib/revalidate";
 import { publicWebsiteLeadSchema } from "@/lib/validations/public-lead";
+import { generateInvoiceNumber } from "@/lib/invoice";
 
 // Public, unauthenticated-by-session intake endpoint for the gsb-holidays
 // marketing site's contact form. Guarded by a shared API key (not JWT
@@ -32,6 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     const assignedToId = await getNextRoundRobinAssignee();
+    const invoiceNumber = await generateInvoiceNumber();
 
     // The website's contact form sends the package as a slug (e.g.
     // "gsb-royal-villa"), not a friendly name — resolve it against the
@@ -54,6 +56,7 @@ export async function POST(request: NextRequest) {
         source: "WEBSITE",
         statusId: defaultStatus.id,
         assignedToId,
+        invoiceNumber,
       },
     });
 
@@ -101,7 +104,7 @@ export async function POST(request: NextRequest) {
     }
 
     revalidateLeadDependents();
-    return NextResponse.json({ success: true, leadId: lead.id }, { status: 201 });
+    return NextResponse.json({ success: true, leadId: lead.id, invoiceNumber }, { status: 201 });
   } catch (error) {
     return handleApiError(error);
   }

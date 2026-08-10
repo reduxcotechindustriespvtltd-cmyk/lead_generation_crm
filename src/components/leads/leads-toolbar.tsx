@@ -2,9 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Search, Download, FileSpreadsheet, FileText } from "lucide-react";
+import type { DateRange } from "react-day-picker";
+import { Search, Download, FileSpreadsheet, FileText, CalendarIcon, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -21,6 +24,16 @@ import {
 import { AddLeadDialog } from "@/components/leads/add-lead-dialog";
 
 type Option = { id: string; name: string };
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function toDateParam(date: Date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString().slice(0, 10);
+}
 
 const SOURCES = [
   { value: "FACEBOOK", label: "Facebook" },
@@ -48,6 +61,12 @@ export function LeadsToolbar({
   const [search, setSearch] = useState(searchParams.get("q") ?? "");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const createdFrom = searchParams.get("createdFrom");
+  const createdTo = searchParams.get("createdTo");
+  const createdRange: DateRange | undefined = createdFrom
+    ? { from: new Date(createdFrom), to: createdTo ? new Date(createdTo) : new Date(createdFrom) }
+    : undefined;
+
   function updateParams(updates: Record<string, string | null>) {
     const params = new URLSearchParams(searchParams.toString());
     for (const [key, value] of Object.entries(updates)) {
@@ -73,6 +92,19 @@ export function LeadsToolbar({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
+
+  function handleCreatedRangeSelect(selected: DateRange | undefined) {
+    updateParams({
+      createdFrom: selected?.from ? toDateParam(selected.from) : null,
+      createdTo: selected?.to
+        ? toDateParam(selected.to)
+        : selected?.from
+          ? toDateParam(selected.from)
+          : null,
+    });
+  }
+
+  const hasCreatedDateFilter = !!createdFrom;
 
   function exportUrl(format: "csv" | "xlsx") {
     const params = new URLSearchParams(searchParams.toString());
@@ -163,6 +195,39 @@ export function LeadsToolbar({
               ))}
             </SelectContent>
           </Select>
+        )}
+
+        <Popover>
+          <PopoverTrigger render={<Button variant="outline" className="justify-start font-normal" />}>
+            <CalendarIcon className="size-4" />
+            {hasCreatedDateFilter ? (
+              <span>
+                {formatDate(createdFrom!)}
+                {createdTo && createdTo !== createdFrom ? ` – ${formatDate(createdTo)}` : ""}
+              </span>
+            ) : (
+              <span className="text-muted-foreground">Created date</span>
+            )}
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0">
+            <Calendar
+              mode="range"
+              selected={createdRange}
+              onSelect={handleCreatedRangeSelect}
+              numberOfMonths={2}
+            />
+          </PopoverContent>
+        </Popover>
+
+        {hasCreatedDateFilter && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            title="Clear date filter"
+            onClick={() => updateParams({ createdFrom: null, createdTo: null })}
+          >
+            <X className="size-3.5" />
+          </Button>
         )}
       </div>
 

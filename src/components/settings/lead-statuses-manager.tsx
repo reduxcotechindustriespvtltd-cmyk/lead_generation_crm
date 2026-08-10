@@ -32,6 +32,7 @@ type LeadStatus = {
   order: number;
   isFinal: boolean;
   isWon: boolean;
+  requiresFollowUp: boolean;
 };
 
 export function LeadStatusesManager({ statuses }: { statuses: LeadStatus[] }) {
@@ -44,6 +45,7 @@ export function LeadStatusesManager({ statuses }: { statuses: LeadStatus[] }) {
     order: statuses.length,
     isFinal: false,
     isWon: false,
+    requiresFollowUp: false,
   });
 
   async function patchStatus(id: string, data: Record<string, unknown>) {
@@ -94,6 +96,7 @@ export function LeadStatusesManager({ statuses }: { statuses: LeadStatus[] }) {
         order: statuses.length + 1,
         isFinal: false,
         isWon: false,
+        requiresFollowUp: false,
       });
       router.refresh();
     } finally {
@@ -122,6 +125,7 @@ export function LeadStatusesManager({ statuses }: { statuses: LeadStatus[] }) {
               <TableHead>Order</TableHead>
               <TableHead>Final Stage</TableHead>
               <TableHead>Counts as Won</TableHead>
+              <TableHead>Requires Follow-up</TableHead>
               <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
@@ -174,6 +178,14 @@ export function LeadStatusesManager({ statuses }: { statuses: LeadStatus[] }) {
                   />
                 </TableCell>
                 <TableCell>
+                  <Switch
+                    checked={status.requiresFollowUp}
+                    onCheckedChange={(checked) =>
+                      patchStatus(status.id, { requiresFollowUp: checked })
+                    }
+                  />
+                </TableCell>
+                <TableCell>
                   <Button
                     variant="ghost"
                     size="icon-sm"
@@ -222,6 +234,13 @@ export function LeadStatusesManager({ statuses }: { statuses: LeadStatus[] }) {
               <Switch
                 checked={form.isWon}
                 onCheckedChange={(checked) => setForm({ ...form, isWon: checked })}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label>Requires follow-up date (e.g. Follow-up, Call Back)</Label>
+              <Switch
+                checked={form.requiresFollowUp}
+                onCheckedChange={(checked) => setForm({ ...form, requiresFollowUp: checked })}
               />
             </div>
           </div>

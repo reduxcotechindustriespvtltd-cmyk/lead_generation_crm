@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CalendarCheck2, Loader2, Paperclip, Pencil, Trash2 } from "lucide-react";
+import { CalendarCheck2, Loader2, Paperclip, Pencil, Plus, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -22,7 +22,7 @@ type PackageOption = {
   imagePath: string;
 };
 type UserOption = { id: string; name: string };
-type StatusOption = { id: string; name: string; color: string };
+type StatusOption = { id: string; name: string; color: string; requiresFollowUp: boolean };
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
@@ -50,6 +50,7 @@ export function LeadBookingHistory({
   const router = useRouter();
   const [editingBooking, setEditingBooking] = useState<BookingRow | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(bookings.length === 0);
 
   async function handleDelete(booking: BookingRow) {
     if (!confirm(`Delete booking for "${booking.guestName}"? This cannot be undone.`)) return;
@@ -68,7 +69,7 @@ export function LeadBookingHistory({
 
   return (
     <div className="flex flex-col gap-4">
-      {canManage && (
+      {canManage && (editingBooking || showCreateForm) && (
         <BookingForm
           key={editingBooking?.id ?? "create"}
           mode={editingBooking ? "edit" : "create"}
@@ -79,9 +80,22 @@ export function LeadBookingHistory({
           statuses={statuses}
           lockedLeadId={leadId}
           leadDefaults={leadDefaults}
-          onDone={() => setEditingBooking(null)}
-          onCancel={() => setEditingBooking(null)}
+          onDone={() => {
+            setEditingBooking(null);
+            setShowCreateForm(false);
+          }}
+          onCancel={() => {
+            setEditingBooking(null);
+            setShowCreateForm(false);
+          }}
         />
+      )}
+
+      {canManage && !editingBooking && !showCreateForm && (
+        <Button variant="outline" className="w-full" onClick={() => setShowCreateForm(true)}>
+          <Plus />
+          Add Another Booking
+        </Button>
       )}
 
       <Card>

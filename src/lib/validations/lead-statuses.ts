@@ -9,6 +9,7 @@ export const createLeadStatusSchema = z.object({
   order: z.number().int().min(0),
   isFinal: z.boolean(),
   isWon: z.boolean(),
+  requiresFollowUp: z.boolean(),
 });
 export type CreateLeadStatusInput = z.infer<typeof createLeadStatusSchema>;
 
@@ -22,6 +23,7 @@ export const updateLeadStatusSchema = z.object({
   order: z.number().int().min(0).optional(),
   isFinal: z.boolean().optional(),
   isWon: z.boolean().optional(),
+  requiresFollowUp: z.boolean().optional(),
 });
 export type UpdateLeadStatusInput = z.infer<typeof updateLeadStatusSchema>;
 

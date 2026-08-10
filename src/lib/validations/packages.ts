@@ -22,6 +22,22 @@ const videoUrlField = z
   .or(z.literal(""))
   .transform((v) => v || undefined);
 
+const extraTitleField = z
+  .string()
+  .trim()
+  .max(200)
+  .optional()
+  .or(z.literal(""))
+  .transform((v) => v || undefined);
+
+const extraContentField = z
+  .string()
+  .trim()
+  .max(2000)
+  .optional()
+  .or(z.literal(""))
+  .transform((v) => v || undefined);
+
 const rawPackageFields = {
   name: z.string().trim().min(1, "Name is required").max(200),
   type: z.string().trim().min(1, "Type is required").max(100),
@@ -32,6 +48,9 @@ const rawPackageFields = {
   maxGuests: z.coerce.number().int().min(1, "At least 1 guest is required"),
   description: z.string().trim().min(1, "Description is required").max(2000),
   amenities: amenitiesField,
+  note: amenitiesField,
+  extraTitle: extraTitleField,
+  extraContent: extraContentField,
   videoUrl: videoUrlField,
   isActive: z.coerce.boolean(),
   order: z.coerce.number().int(),
@@ -42,6 +61,7 @@ export const createPackageSchema = z.object({
   priceKid: rawPackageFields.priceKid.default(0),
   priceInfant: rawPackageFields.priceInfant.default(0),
   priceUnit: rawPackageFields.priceUnit.default("per night"),
+  note: rawPackageFields.note.default([]),
   isActive: rawPackageFields.isActive.default(true),
   order: rawPackageFields.order.default(0),
 });
@@ -57,14 +77,17 @@ export const updatePackageSchema = z.object({
   maxGuests: rawPackageFields.maxGuests.optional(),
   description: rawPackageFields.description.optional(),
   amenities: rawPackageFields.amenities.optional(),
+  note: rawPackageFields.note.optional(),
+  extraTitle: rawPackageFields.extraTitle,
+  extraContent: rawPackageFields.extraContent,
   videoUrl: rawPackageFields.videoUrl,
   isActive: rawPackageFields.isActive.optional(),
   order: rawPackageFields.order.optional(),
 });
 export type UpdatePackageInput = z.infer<typeof updatePackageSchema>;
 
-// Client-form-only variant — amenities stay as raw newline-separated text
-// here and are split/JSON-encoded at submit time in the form dialog.
+// Client-form-only variant — amenities/note stay as raw newline-separated
+// text here and are split/JSON-encoded at submit time in the form dialog.
 export const packageFormSchema = z.object({
   name: rawPackageFields.name,
   type: rawPackageFields.type,
@@ -75,6 +98,9 @@ export const packageFormSchema = z.object({
   maxGuests: z.number().int().min(1, "At least 1 guest is required"),
   description: rawPackageFields.description,
   amenities: z.string(),
+  note: z.string(),
+  extraTitle: z.string(),
+  extraContent: z.string(),
   videoUrl: z.string(),
   isActive: z.boolean(),
   order: z.number().int(),

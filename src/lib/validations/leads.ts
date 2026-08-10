@@ -7,16 +7,23 @@ export const LEAD_SORT_FIELDS = [
   "followUpDate",
 ] as const;
 
-export const leadListQuerySchema = z.object({
-  q: z.string().trim().optional(),
-  statusId: z.string().optional(),
-  source: z.enum(["FACEBOOK", "INSTAGRAM", "WHATSAPP", "MANUAL", "WEBSITE", "OTHER"]).optional(),
-  assignedToId: z.string().optional(), // "unassigned" is a valid sentinel value
-  page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(20),
-  sortBy: z.enum(LEAD_SORT_FIELDS).default("createdAt"),
-  sortDir: z.enum(["asc", "desc"]).default("desc"),
-});
+export const leadListQuerySchema = z
+  .object({
+    q: z.string().trim().optional(),
+    statusId: z.string().optional(),
+    source: z.enum(["FACEBOOK", "INSTAGRAM", "WHATSAPP", "MANUAL", "WEBSITE", "OTHER"]).optional(),
+    assignedToId: z.string().optional(), // "unassigned" is a valid sentinel value
+    createdFrom: z.coerce.date().optional(),
+    createdTo: z.coerce.date().optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(20),
+    sortBy: z.enum(LEAD_SORT_FIELDS).default("createdAt"),
+    sortDir: z.enum(["asc", "desc"]).default("desc"),
+  })
+  .refine((data) => !data.createdFrom || !data.createdTo || data.createdTo >= data.createdFrom, {
+    message: "End date must be on or after the start date",
+    path: ["createdTo"],
+  });
 
 export type LeadListQuery = z.infer<typeof leadListQuerySchema>;
 
