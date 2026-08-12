@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     const input = createPackageSchema.parse({
       name: formData.get("name"),
       type: formData.get("type"),
-      destination: formData.get("destination") || undefined,
+      destinationId: formData.get("destinationId") || undefined,
       price: formData.get("price"),
       priceKid: formData.get("priceKid") || undefined,
       priceInfant: formData.get("priceInfant") || undefined,
@@ -87,6 +87,13 @@ export async function POST(request: NextRequest) {
       throw error;
     }
 
+    if (input.destinationId) {
+      const destination = await db.destination.findUnique({ where: { id: input.destinationId } });
+      if (!destination) {
+        return jsonError("Selected destination does not exist", 400);
+      }
+    }
+
     const slug = await generateUniquePackageSlug(input.name);
 
     const pkg = await db.package.create({
@@ -94,7 +101,7 @@ export async function POST(request: NextRequest) {
         slug,
         name: input.name,
         type: input.type,
-        destination: input.destination,
+        destinationId: input.destinationId,
         price: input.price,
         priceKid: input.priceKid,
         priceInfant: input.priceInfant,
@@ -123,6 +130,7 @@ export async function POST(request: NextRequest) {
       include: {
         images: { orderBy: { order: "asc" } },
         videos: { orderBy: { order: "asc" } },
+        destinationRef: true,
       },
     });
 

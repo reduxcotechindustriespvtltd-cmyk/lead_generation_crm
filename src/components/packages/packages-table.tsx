@@ -16,8 +16,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PackageFormDialog, type PackageRow } from "@/components/packages/package-form-dialog";
+import type { DestinationRow } from "@/components/destinations/destinations-manager";
 
-export function PackagesTable({ packages }: { packages: PackageRow[] }) {
+export function PackagesTable({
+  packages,
+  destinations,
+}: {
+  packages: PackageRow[];
+  destinations: DestinationRow[];
+}) {
   const router = useRouter();
   const [editing, setEditing] = useState<PackageRow | null>(null);
 
@@ -114,6 +121,7 @@ export function PackagesTable({ packages }: { packages: PackageRow[] }) {
           pkg={editing}
           open={!!editing}
           onOpenChange={(v) => !v && setEditing(null)}
+          destinations={destinations}
         />
       )}
     </div>

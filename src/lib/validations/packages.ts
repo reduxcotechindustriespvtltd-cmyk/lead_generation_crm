@@ -38,7 +38,7 @@ const extraContentField = z
   .or(z.literal(""))
   .transform((v) => v || undefined);
 
-const destinationField = z
+const destinationIdField = z
   .string()
   .trim()
   .max(100)
@@ -51,7 +51,7 @@ const PACKAGE_TYPES = ["Villa", "Farmhouse", "Resort", "Cottage", "Camping", "Gl
 const rawPackageFields = {
   name: z.string().trim().min(1, "Name is required").max(200),
   type: z.enum(PACKAGE_TYPES, { message: "Select a package type" }),
-  destination: destinationField,
+  destinationId: destinationIdField,
   price: z.coerce.number().min(0, "Price cannot be negative"),
   priceKid: z.coerce.number().min(0, "Price cannot be negative"),
   priceInfant: z.coerce.number().min(0, "Price cannot be negative"),
@@ -89,7 +89,7 @@ export type CreatePackageInput = z.infer<typeof createPackageSchema>;
 export const updatePackageSchema = z.object({
   name: rawPackageFields.name.optional(),
   type: rawPackageFields.type.optional(),
-  destination: rawPackageFields.destination,
+  destinationId: rawPackageFields.destinationId,
   price: rawPackageFields.price.optional(),
   priceKid: rawPackageFields.priceKid.optional(),
   priceInfant: rawPackageFields.priceInfant.optional(),
@@ -116,7 +116,7 @@ export type UpdatePackageInput = z.infer<typeof updatePackageSchema>;
 export const packageFormSchema = z.object({
   name: rawPackageFields.name,
   type: rawPackageFields.type,
-  destination: z.string(),
+  destinationId: z.string().min(1, "Select a destination"),
   price: z.number().min(0, "Price cannot be negative"),
   priceKid: z.number().min(0, "Price cannot be negative"),
   priceInfant: z.number().min(0, "Price cannot be negative"),

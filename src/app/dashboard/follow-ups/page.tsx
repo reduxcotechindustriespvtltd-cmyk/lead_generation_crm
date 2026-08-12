@@ -1,4 +1,5 @@
 import { getCurrentUser } from "@/lib/auth/session";
+import { db } from "@/lib/db";
 import { listFollowUps } from "@/lib/queries/follow-ups";
 import type { LeadScope } from "@/lib/queries/leads";
 import { followUpListQuerySchema } from "@/lib/validations/follow-ups";
@@ -16,7 +17,10 @@ export default async function FollowUpsPage({
   const scope: LeadScope =
     session?.role === "SALES_EXECUTIVE" ? { forcedAssignedToId: session.sub } : {};
 
-  const result = await listFollowUps(query, scope);
+  const [result, statuses] = await Promise.all([
+    listFollowUps(query, scope),
+    db.leadStatus.findMany({ orderBy: { order: "asc" } }),
+  ]);
   const showAssignee = session?.role !== "SALES_EXECUTIVE";
 
   const items = result.followUps.map((f) => ({
@@ -41,7 +45,7 @@ export default async function FollowUpsPage({
         </p>
       </div>
 
-      <FollowUpsToolbar />
+      <FollowUpsToolbar statuses={statuses} />
 
       <FollowUpsTable
         items={items}

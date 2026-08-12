@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
       include: {
         images: { orderBy: { order: "asc" } },
         videos: { orderBy: { order: "asc" } },
+        destinationRef: true,
       },
     });
 
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
         slug: pkg.slug,
         name: pkg.name,
         type: pkg.type,
-        destination: pkg.destination ?? null,
+        destination: pkg.destinationRef?.slug ?? pkg.destination ?? null,
         price: Number(pkg.price),
         priceKid: Number(pkg.priceKid),
         priceInfant: Number(pkg.priceInfant),

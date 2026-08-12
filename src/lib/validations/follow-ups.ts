@@ -6,6 +6,7 @@ export const followUpListQuerySchema = z
   .object({
     q: z.string().trim().optional(),
     status: z.enum(["PENDING", "DONE", "MISSED", "CANCELLED", "ALL"]).optional(),
+    leadStatusId: z.string().optional(),
     enquiredFrom: z.coerce.date().optional(),
     enquiredTo: z.coerce.date().optional(),
     page: z.coerce.number().int().min(1).default(1),

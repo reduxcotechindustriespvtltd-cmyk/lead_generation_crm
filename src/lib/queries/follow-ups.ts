@@ -41,6 +41,7 @@ export async function getFollowUpsGrouped(scope: LeadScope) {
 export async function listFollowUps(query: FollowUpListQuery, scope: LeadScope) {
   const leadWhere: Prisma.LeadWhereInput = {};
   if (scope.forcedAssignedToId) leadWhere.assignedToId = scope.forcedAssignedToId;
+  if (query.leadStatusId) leadWhere.statusId = query.leadStatusId;
   if (query.q) {
     leadWhere.OR = [
       { fullName: { contains: query.q, mode: "insensitive" } },

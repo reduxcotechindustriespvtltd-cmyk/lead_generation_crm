@@ -8,6 +8,7 @@ export async function listPackages() {
     include: {
       images: { orderBy: { order: "asc" } },
       videos: { orderBy: { order: "asc" } },
+      destinationRef: true,
     },
   });
 }

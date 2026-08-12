@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { can } from "@/lib/auth/rbac";
 import { listPackages } from "@/lib/queries/packages";
+import { listDestinations } from "@/lib/queries/destinations";
 import { getSupabasePublicUrl } from "@/lib/storage/supabase-file-storage";
 import { PackagesToolbar } from "@/components/packages/packages-toolbar";
 import { PackagesTable } from "@/components/packages/packages-table";
@@ -12,12 +13,12 @@ export default async function PackagesAdminPage() {
     redirect("/dashboard");
   }
 
-  const packages = await listPackages();
+  const [packages, destinations] = await Promise.all([listPackages(), listDestinations()]);
   const rows = packages.map((pkg) => ({
     id: pkg.id,
     name: pkg.name,
     type: pkg.type,
-    destination: pkg.destination,
+    destinationId: pkg.destinationId,
     price: pkg.price.toString(),
     priceKid: pkg.priceKid.toString(),
     priceInfant: pkg.priceInfant.toString(),
@@ -49,9 +50,9 @@ export default async function PackagesAdminPage() {
             {rows.length} package{rows.length === 1 ? "" : "s"} — controls the gsb-holidays Packages page
           </p>
         </div>
-        <PackagesToolbar />
+        <PackagesToolbar destinations={destinations} />
       </div>
-      <PackagesTable packages={rows} />
+      <PackagesTable packages={rows} destinations={destinations} />
     </div>
   );
 }

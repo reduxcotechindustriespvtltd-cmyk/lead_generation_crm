@@ -24,6 +24,10 @@ const STATUS_OPTIONS = [
   { value: "ALL", label: "All Statuses" },
 ];
 
+type LeadStatusOption = { id: string; name: string };
+
+const ALL_LEAD_STATUSES = "__all__";
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
@@ -34,7 +38,7 @@ function toDateParam(date: Date) {
   return d.toISOString().slice(0, 10);
 }
 
-export function FollowUpsToolbar() {
+export function FollowUpsToolbar({ statuses }: { statuses: LeadStatusOption[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -50,7 +54,7 @@ export function FollowUpsToolbar() {
   function updateParams(updates: Record<string, string | null>) {
     const params = new URLSearchParams(searchParams.toString());
     for (const [key, value] of Object.entries(updates)) {
-      if (value === null || value === "") params.delete(key);
+      if (value === null || value === "" || value === ALL_LEAD_STATUSES) params.delete(key);
       else params.set(key, value);
     }
     params.delete("page");
@@ -104,6 +108,27 @@ export function FollowUpsToolbar() {
           {STATUS_OPTIONS.map((s) => (
             <SelectItem key={s.value} value={s.value}>
               {s.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={searchParams.get("leadStatusId") ?? ALL_LEAD_STATUSES}
+        onValueChange={(v) => updateParams({ leadStatusId: v })}
+      >
+        <SelectTrigger className="w-[150px]">
+          <SelectValue placeholder="Lead Status">
+            {(v: string) =>
+              v === ALL_LEAD_STATUSES ? "All Lead Statuses" : (statuses.find((s) => s.id === v)?.name ?? "Lead Status")
+            }
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL_LEAD_STATUSES}>All Lead Statuses</SelectItem>
+          {statuses.map((s) => (
+            <SelectItem key={s.id} value={s.id}>
+              {s.name}
             </SelectItem>
           ))}
         </SelectContent>

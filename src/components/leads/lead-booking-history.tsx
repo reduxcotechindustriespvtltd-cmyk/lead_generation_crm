@@ -91,10 +91,10 @@ export function LeadBookingHistory({
         />
       )}
 
-      {canManage && !editingBooking && !showCreateForm && (
+      {canManage && bookings.length === 0 && !editingBooking && !showCreateForm && (
         <Button variant="outline" className="w-full" onClick={() => setShowCreateForm(true)}>
           <Plus />
-          Add Another Booking
+          Add Booking
         </Button>
       )}
 

@@ -30,12 +30,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import type { DestinationRow } from "@/components/destinations/destinations-manager";
 
 export type PackageRow = {
   id: string;
   name: string;
   type: string;
-  destination: string | null;
+  destinationId: string | null;
   price: string;
   priceKid: string;
   priceInfant: string;
@@ -88,11 +89,13 @@ export function PackageFormDialog({
   pkg,
   open,
   onOpenChange,
+  destinations,
 }: {
   mode: "create" | "edit";
   pkg?: PackageRow;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  destinations: DestinationRow[];
 }) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -108,7 +111,7 @@ export function PackageFormDialog({
       ? {
           name: pkg.name,
           type: pkg.type as (typeof PACKAGE_TYPES)[number],
-          destination: pkg.destination ?? "",
+          destinationId: pkg.destinationId ?? "",
           price: Number(pkg.price),
           priceKid: Number(pkg.priceKid),
           priceInfant: Number(pkg.priceInfant),
@@ -130,7 +133,7 @@ export function PackageFormDialog({
       : {
           name: "",
           type: "Villa",
-          destination: "",
+          destinationId: "",
           price: 0,
           priceKid: 0,
           priceInfant: 0,
@@ -205,7 +208,7 @@ export function PackageFormDialog({
       const formData = new FormData();
       formData.set("name", values.name);
       formData.set("type", values.type);
-      formData.set("destination", values.destination.trim());
+      formData.set("destinationId", values.destinationId);
       formData.set("price", String(values.price));
       formData.set("priceKid", String(values.priceKid));
       formData.set("priceInfant", String(values.priceInfant));
@@ -323,13 +326,26 @@ export function PackageFormDialog({
               />
               <FormField
                 control={form.control}
-                name="destination"
+                name="destinationId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Destination</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Lonavala, Karjat..." {...field} />
-                    </FormControl>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select a destination" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {destinations
+                          .filter((d) => d.isActive || d.id === field.value)
+                          .map((d) => (
+                            <SelectItem key={d.id} value={d.id}>
+                              {d.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

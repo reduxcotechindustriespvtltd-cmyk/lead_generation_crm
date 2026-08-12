@@ -17,7 +17,7 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/packages/[
     const input = updatePackageSchema.parse({
       name: formData.get("name") || undefined,
       type: formData.get("type") || undefined,
-      destination: formData.has("destination") ? formData.get("destination") : undefined,
+      destinationId: formData.has("destinationId") ? formData.get("destinationId") : undefined,
       price: formData.get("price") || undefined,
       priceKid: formData.get("priceKid") || undefined,
       priceInfant: formData.get("priceInfant") || undefined,
@@ -36,6 +36,13 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/packages/[
       isActive: formData.has("isActive") ? formData.get("isActive") : undefined,
       order: formData.get("order") || undefined,
     });
+
+    if (input.destinationId) {
+      const destination = await db.destination.findUnique({ where: { id: input.destinationId } });
+      if (!destination) {
+        return jsonError("Selected destination does not exist", 400);
+      }
+    }
 
     let imageFields: { imagePath?: string } = {};
     const file = formData.get("image");
@@ -58,6 +65,7 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/packages/[
       include: {
         images: { orderBy: { order: "asc" } },
         videos: { orderBy: { order: "asc" } },
+        destinationRef: true,
       },
     });
 

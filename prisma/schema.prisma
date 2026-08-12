@@ -706,10 +706,11 @@ model Package {
   slug         String   @unique
   name         String
   type         String
-  // Free-text destination (e.g. "Lonavala", "Karjat") rather than an enum,
-  // so ops can add destinations without a migration — mirrors the same
-  // handful of destinations used on the gsb-holidays site's nav/filters.
-  destination  String?
+  // Legacy free-text destination — superseded by destinationRef below.
+  // Kept temporarily as a rollback safety net; not written to by new code.
+  destination    String?
+  destinationId  String?
+  destinationRef Destination? @relation(fields: [destinationId], references: [id], onDelete: Restrict)
   price        Decimal  @db.Decimal(12, 2)
   priceKid     Decimal  @default(0) @db.Decimal(12, 2)
   priceInfant  Decimal  @default(0) @db.Decimal(12, 2)
@@ -750,7 +751,27 @@ model Package {
   bookings Booking[]
 
   @@index([isActive])
+  @@index([destinationId])
   @@map("packages")
+}
+
+// CRM-managed destinations — drives the gsb-holidays site's nav "Destinations"
+// dropdown and /packages?location= filtering via /api/public/destinations.
+model Destination {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  // URL-safe key used by gsb-holidays' /packages?location=<slug> links —
+  // derived from name at creation time and stored explicitly (not
+  // recomputed on read), so it stays stable if name is later edited.
+  slug      String   @unique
+  isActive  Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  packages Package[]
+
+  @@map("destinations")
 }
 
 // Additional gallery images for a package's detail page, beyond its single
