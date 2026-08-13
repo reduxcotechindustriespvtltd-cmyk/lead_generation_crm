@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { db } from "@/lib/db";
 import { requireRole, requireUser } from "@/lib/auth/session";
 import { handleApiError, jsonError } from "@/lib/api-response";
@@ -167,7 +167,7 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/bookings/[
           where: { id: updated.id },
           data: { invoiceNumber: await generateInvoiceNumber() },
         });
-    void notifyBookingEvent(buildBookingEventPayload(withInvoice, "BOOKING_UPDATED"));
+    after(() => notifyBookingEvent(buildBookingEventPayload(withInvoice, "BOOKING_UPDATED")));
 
     return NextResponse.json({ booking: withInvoice });
   } catch (error) {

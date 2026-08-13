@@ -100,11 +100,13 @@ export async function notifyBookingEvent(payload: BookingEventPayload): Promise<
       headers: { "content-type": "application/json", "x-api-key": apiKey },
       body: JSON.stringify(payload),
       // The mail service generates a PDF and sends real SMTP mail
-      // synchronously before responding — this is fire-and-forget from the
-      // caller's perspective (never awaited before the booking API
-      // responds), so a generous timeout costs nothing and avoids logging
-      // false-negative errors for a slow-but-successful send.
-      signal: AbortSignal.timeout(10000),
+      // synchronously before responding (two sequential-ish SMTP sends plus
+      // a cold start can add up) — this call runs inside next/server's
+      // after() at every call site, so it's guaranteed to actually finish
+      // even though the booking API already responded. A generous timeout
+      // costs nothing here and avoids false-negative error logs for a
+      // slow-but-successful send.
+      signal: AbortSignal.timeout(25000),
     });
     if (!res.ok) {
       console.error("notifyBookingEvent failed", res.status, await res.text().catch(() => ""));

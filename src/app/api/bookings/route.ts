@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { db } from "@/lib/db";
 import { requireRole } from "@/lib/auth/session";
 import { handleApiError, jsonError } from "@/lib/api-response";
@@ -131,7 +131,9 @@ export async function POST(request: NextRequest) {
       where: { id: booking.id },
       data: { invoiceNumber },
     });
-    void notifyBookingEvent(buildBookingEventPayload(withInvoice, "BOOKING_CREATED"));
+    // Vercel does not guarantee an un-awaited promise keeps running once the
+    // response is sent — after() schedules it to actually complete instead.
+    after(() => notifyBookingEvent(buildBookingEventPayload(withInvoice, "BOOKING_CREATED")));
 
     return NextResponse.json({ booking: withInvoice }, { status: 201 });
   } catch (error) {

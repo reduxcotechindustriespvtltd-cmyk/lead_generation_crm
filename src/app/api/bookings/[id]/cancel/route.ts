@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth/session";
 import { handleApiError, jsonError } from "@/lib/api-response";
@@ -33,7 +33,7 @@ export async function POST(_request: Request, ctx: RouteContext<"/api/bookings/[
       },
     });
 
-    void notifyBookingEvent(buildBookingEventPayload(updated, "BOOKING_CANCELLED"));
+    after(() => notifyBookingEvent(buildBookingEventPayload(updated, "BOOKING_CANCELLED")));
 
     return NextResponse.json({ booking: updated });
   } catch (error) {
