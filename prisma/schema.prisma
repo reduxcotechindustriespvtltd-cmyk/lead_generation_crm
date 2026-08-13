@@ -98,6 +98,7 @@ model User {
   sentWhatsAppMessages      WhatsAppMessage[]
   createdBookings           Booking[]              @relation("BookingCreatedBy")
   assignedBookings          Booking[]              @relation("BookingAssignee")
+  cancelledBookings         Booking[]              @relation("BookingCancelledBy")
 
   @@index([role])
   @@index([organizationId])
@@ -503,6 +504,20 @@ model Booking {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  // Cancellation is a real terminal state distinct from `status` (which is
+  // just the shared, admin-configurable LeadStatus list and has no fixed
+  // "Cancelled" value) — set via a dedicated cancel endpoint, never through
+  // the generic PATCH/statusId path.
+  isCancelled   Boolean   @default(false)
+  cancelledAt   DateTime?
+  cancelledById String?
+  cancelledBy   User?     @relation("BookingCancelledBy", fields: [cancelledById], references: [id], onDelete: SetNull)
+
+  // Issued once via generateInvoiceNumber() (src/lib/invoice.ts) — the same
+  // global sequence already used for website-lead invoices — the first time
+  // a booking-event email is sent for this booking.
+  invoiceNumber String? @unique
+
   @@index([leadId])
   @@index([packageId])
   @@index([assignedToId])
@@ -510,6 +525,7 @@ model Booking {
   @@index([statusId])
   @@index([createdAt])
   @@index([phone])
+  @@index([isCancelled])
   @@map("bookings")
 }
 

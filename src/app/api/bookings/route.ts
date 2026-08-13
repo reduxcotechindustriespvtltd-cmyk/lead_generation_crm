@@ -3,7 +3,9 @@ import { db } from "@/lib/db";
 import { requireRole } from "@/lib/auth/session";
 import { handleApiError, jsonError } from "@/lib/api-response";
 import { calculateBookingFinancials } from "@/lib/booking-financials";
+import { generateInvoiceNumber } from "@/lib/invoice";
 import { listBookings } from "@/lib/queries/bookings";
+import { buildBookingEventPayload, notifyBookingEvent } from "@/lib/notify-booking-event";
 import { InvalidFileUploadError, saveLocalFile } from "@/lib/storage/local-file-storage";
 import { bookingListQuerySchema, createBookingSchema } from "@/lib/validations/bookings";
 
@@ -124,7 +126,14 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({ booking }, { status: 201 });
+    const invoiceNumber = await generateInvoiceNumber();
+    const withInvoice = await db.booking.update({
+      where: { id: booking.id },
+      data: { invoiceNumber },
+    });
+    void notifyBookingEvent(buildBookingEventPayload(withInvoice, "BOOKING_CREATED"));
+
+    return NextResponse.json({ booking: withInvoice }, { status: 201 });
   } catch (error) {
     return handleApiError(error);
   }

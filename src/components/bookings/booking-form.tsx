@@ -82,6 +82,8 @@ export type BookingRow = {
   destination: string | null;
   attachmentPath: string | null;
   attachmentName: string | null;
+  isCancelled: boolean;
+  cancelledAt: string | null;
 };
 
 const STAY_TYPE_LABELS: Record<string, string> = {

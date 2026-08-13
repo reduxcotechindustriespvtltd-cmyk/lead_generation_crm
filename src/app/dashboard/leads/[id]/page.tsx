@@ -48,6 +48,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   // that it lives inline on the lead page instead of a separate page.
   const canManageBookings = session.role !== "SALES_EXECUTIVE";
   const canDeleteBookings = can(session.role, "deleteBooking");
+  const canCancelBookings = can(session.role, "cancelBooking");
 
   const timeline = (
     <LeadTimeline
@@ -73,6 +74,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         statuses={statuses}
         canManage={canManageBookings}
         canDelete={canDeleteBookings}
+        canCancel={canCancelBookings}
         bookings={lead.bookings.map((b) => ({
           id: b.id,
           guestName: b.guestName,
@@ -109,6 +111,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           destination: b.destination,
           attachmentPath: b.attachmentPath,
           attachmentName: b.attachmentName,
+          isCancelled: b.isCancelled,
+          cancelledAt: b.cancelledAt?.toISOString() ?? null,
         }))}
       />
 

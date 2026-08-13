@@ -4,7 +4,9 @@ import { requireRole, requireUser } from "@/lib/auth/session";
 import { handleApiError, jsonError } from "@/lib/api-response";
 import { can } from "@/lib/auth/rbac";
 import { calculateBookingFinancials } from "@/lib/booking-financials";
+import { generateInvoiceNumber } from "@/lib/invoice";
 import { getBookingDetail } from "@/lib/queries/bookings";
+import { buildBookingEventPayload, notifyBookingEvent } from "@/lib/notify-booking-event";
 import {
   deleteLocalFile,
   InvalidFileUploadError,
@@ -157,7 +159,17 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/bookings/[
       });
     }
 
-    return NextResponse.json({ booking: updated });
+    // Bookings created before invoice numbers existed won't have one yet —
+    // backfill lazily so every notification from here on has one.
+    const withInvoice = updated.invoiceNumber
+      ? updated
+      : await db.booking.update({
+          where: { id: updated.id },
+          data: { invoiceNumber: await generateInvoiceNumber() },
+        });
+    void notifyBookingEvent(buildBookingEventPayload(withInvoice, "BOOKING_UPDATED"));
+
+    return NextResponse.json({ booking: withInvoice });
   } catch (error) {
     return handleApiError(error);
   }

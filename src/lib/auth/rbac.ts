@@ -10,6 +10,7 @@ export const permissions = {
   viewFullAnalytics: (role: UserRole) => role === "ADMIN" || role === "MANAGER",
   exportLeads: (role: UserRole) => role === "ADMIN" || role === "MANAGER",
   deleteBooking: (role: UserRole) => role === "ADMIN" || role === "MANAGER",
+  cancelBooking: (role: UserRole) => role === "ADMIN" || role === "MANAGER",
   manageContent: (role: UserRole) => role === "ADMIN" || role === "MANAGER",
 };
 

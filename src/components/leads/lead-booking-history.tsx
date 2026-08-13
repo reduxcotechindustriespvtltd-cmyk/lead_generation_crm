@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CalendarCheck2, Loader2, Paperclip, Pencil, Plus, Trash2 } from "lucide-react";
+import { Ban, CalendarCheck2, Loader2, Paperclip, Pencil, Plus, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LeadStatusBadge } from "@/components/leads/lead-status-badge";
 import { BookingForm, type BookingRow } from "@/components/bookings/booking-form";
@@ -37,6 +38,7 @@ export function LeadBookingHistory({
   statuses,
   canManage,
   canDelete,
+  canCancel,
 }: {
   leadId: string;
   leadDefaults: { fullName: string; phone: string };
@@ -46,10 +48,12 @@ export function LeadBookingHistory({
   statuses: StatusOption[];
   canManage: boolean;
   canDelete: boolean;
+  canCancel: boolean;
 }) {
   const router = useRouter();
   const [editingBooking, setEditingBooking] = useState<BookingRow | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(bookings.length === 0);
 
   async function handleDelete(booking: BookingRow) {
@@ -63,6 +67,21 @@ export function LeadBookingHistory({
       return;
     }
     toast.success("Booking deleted");
+    if (editingBooking?.id === booking.id) setEditingBooking(null);
+    router.refresh();
+  }
+
+  async function handleCancel(booking: BookingRow) {
+    if (!confirm(`Cancel booking for "${booking.guestName}"? This cannot be undone.`)) return;
+    setCancellingId(booking.id);
+    const res = await fetch(`/api/bookings/${booking.id}/cancel`, { method: "POST" });
+    setCancellingId(null);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      toast.error(err.error ?? "Cancel failed");
+      return;
+    }
+    toast.success("Booking cancelled");
     if (editingBooking?.id === booking.id) setEditingBooking(null);
     router.refresh();
   }
@@ -115,7 +134,9 @@ export function LeadBookingHistory({
               {bookings.map((booking) => (
                 <div
                   key={booking.id}
-                  className="-mx-2 flex items-center justify-between gap-3 rounded-lg px-2 py-3 text-sm"
+                  className={`-mx-2 flex items-center justify-between gap-3 rounded-lg px-2 py-3 text-sm ${
+                    booking.isCancelled ? "opacity-60" : ""
+                  }`}
                 >
                   <div className="min-w-0">
                     <div className="font-medium">
@@ -142,14 +163,32 @@ export function LeadBookingHistory({
                     <span className="font-medium">
                       ₹{Number(booking.totalRevenue).toLocaleString("en-IN")}
                     </span>
-                    <LeadStatusBadge name={booking.status.name} color={booking.status.color} />
-                    {canManage && (
+                    {booking.isCancelled ? (
+                      <Badge variant="destructive">Cancelled</Badge>
+                    ) : (
+                      <LeadStatusBadge name={booking.status.name} color={booking.status.color} />
+                    )}
+                    {canManage && !booking.isCancelled && (
                       <Button
                         variant="ghost"
                         size="icon-sm"
                         onClick={() => setEditingBooking(booking)}
                       >
                         <Pencil className="size-3.5" />
+                      </Button>
+                    )}
+                    {canCancel && !booking.isCancelled && (
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => handleCancel(booking)}
+                        disabled={cancellingId === booking.id}
+                      >
+                        {cancellingId === booking.id ? (
+                          <Loader2 className="size-3.5 animate-spin" />
+                        ) : (
+                          <Ban className="size-3.5" />
+                        )}
                       </Button>
                     )}
                     {canDelete && (
