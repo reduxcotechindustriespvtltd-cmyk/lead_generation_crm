@@ -38,6 +38,7 @@ export default async function LeadsPage({
     state: lead.state,
     packageInterest: lead.packageInterest,
     source: lead.source,
+    invoiceNumber: lead.invoiceNumber,
     createdAt: lead.createdAt.toISOString(),
     followUpDate: lead.followUpDate ? lead.followUpDate.toISOString() : null,
     statusId: lead.statusId,

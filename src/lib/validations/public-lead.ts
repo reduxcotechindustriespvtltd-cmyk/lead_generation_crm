@@ -17,6 +17,9 @@ export const publicWebsiteLeadSchema = z.object({
   checkIn: z.string().trim().optional(),
   checkOut: z.string().trim().optional(),
   guests: z.string().trim().optional(),
+  guestsAdults: z.string().trim().optional(),
+  guestsKids: z.string().trim().optional(),
+  guestsInfants: z.string().trim().optional(),
   package: z.string().trim().max(200).optional(),
   message: z.string().trim().max(2000).optional(),
 });

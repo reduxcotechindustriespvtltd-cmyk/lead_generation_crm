@@ -39,8 +39,35 @@ export function LeadHeader({
     adSetName: string | null;
     adName: string | null;
     formName: string | null;
+    invoiceNumber: string | null;
+    createdAt: string | Date;
+    checkInDate: string | Date | null;
+    checkOutDate: string | Date | null;
+    guestsAdults: number | null;
+    guestsKids: number | null;
+    guestsInfants: number | null;
   };
 }) {
+  function formatDate(value: string | Date) {
+    return new Date(value).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  }
+  function formatDateTime(value: string | Date) {
+    return new Date(value).toLocaleString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  }
+  const guestParts = [
+    lead.guestsAdults ? `${lead.guestsAdults} Adult${lead.guestsAdults === 1 ? "" : "s"}` : null,
+    lead.guestsKids ? `${lead.guestsKids} Kid${lead.guestsKids === 1 ? "" : "s"}` : null,
+    lead.guestsInfants ? `${lead.guestsInfants} Infant${lead.guestsInfants === 1 ? "" : "s"}` : null,
+  ].filter(Boolean);
+  const hasTripDetails = Boolean(
+    lead.invoiceNumber || lead.checkInDate || lead.checkOutDate || guestParts.length > 0,
+  );
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -150,6 +177,39 @@ export function LeadHeader({
         <div className="border-t pt-4 text-sm">
           <p className="text-muted-foreground text-xs">Package</p>
           <p className="truncate font-medium">{lead.packageInterest}</p>
+        </div>
+      )}
+
+      {hasTripDetails && (
+        <div className="grid grid-cols-2 gap-3 border-t pt-4 text-sm sm:grid-cols-3">
+          {lead.invoiceNumber && (
+            <div>
+              <p className="text-muted-foreground text-xs">Invoice #</p>
+              <p className="truncate font-medium">{lead.invoiceNumber}</p>
+            </div>
+          )}
+          <div>
+            <p className="text-muted-foreground text-xs">Submitted</p>
+            <p className="truncate font-medium">{formatDateTime(lead.createdAt)}</p>
+          </div>
+          {lead.checkInDate && (
+            <div>
+              <p className="text-muted-foreground text-xs">Check-in</p>
+              <p className="truncate font-medium">{formatDate(lead.checkInDate)}</p>
+            </div>
+          )}
+          {lead.checkOutDate && (
+            <div>
+              <p className="text-muted-foreground text-xs">Check-out</p>
+              <p className="truncate font-medium">{formatDate(lead.checkOutDate)}</p>
+            </div>
+          )}
+          {guestParts.length > 0 && (
+            <div>
+              <p className="text-muted-foreground text-xs">Guests</p>
+              <p className="truncate font-medium">{guestParts.join(", ")}</p>
+            </div>
+          )}
         </div>
       )}
 

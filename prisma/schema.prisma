@@ -374,6 +374,16 @@ model Lead {
   // created by other sources (manual entry, Meta webhook, etc.).
   invoiceNumber String? @unique
 
+  // Trip details captured on the website's contact form — null for leads
+  // from other sources (Meta, manual entry, WhatsApp) that don't collect
+  // this. These are what the visitor typed at inquiry time, not a
+  // confirmed reservation — see Booking.checkInDate/checkOutDate for that.
+  checkInDate   DateTime?
+  checkOutDate  DateTime?
+  guestsAdults  Int?
+  guestsKids    Int?
+  guestsInfants Int?
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   lastActivityAt DateTime @default(now())

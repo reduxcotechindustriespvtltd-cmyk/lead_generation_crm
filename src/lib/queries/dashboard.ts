@@ -64,7 +64,7 @@ export async function getLeadCounts(scope: DashboardScope) {
     today,
     thisWeek,
     thisMonth,
-    unassigned: countByStatusName("Unassigned"),
+    unassigned: countByStatusName("New Lead"),
     assigned: countByStatusName("Assigned"),
     converted,
     lost,

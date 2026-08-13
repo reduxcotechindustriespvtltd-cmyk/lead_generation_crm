@@ -14,7 +14,6 @@ import {
   Trash2,
   Users2,
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
 
 import {
   Table,
@@ -77,6 +76,7 @@ type LeadRow = {
   state: string | null;
   packageInterest: string | null;
   source: string;
+  invoiceNumber: string | null;
   createdAt: string;
   followUpDate: string | null;
   statusId: string;
@@ -193,6 +193,7 @@ export function LeadsTable({
                   onToggle={toggleSort}
                 />
               </TableHead>
+              <TableHead>Invoice #</TableHead>
               <TableHead>
                 <SortHeader
                   field="createdAt"
@@ -208,7 +209,7 @@ export function LeadsTable({
           <TableBody>
             {leads.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="h-40 text-center">
+                <TableCell colSpan={10} className="h-40 text-center">
                   {hasActiveFilters ? (
                     <EmptyState
                       icon={SearchX}
@@ -296,7 +297,19 @@ export function LeadsTable({
                     className="text-muted-foreground cursor-pointer text-sm whitespace-nowrap"
                     onClick={() => router.push(`/dashboard/leads/${lead.id}`)}
                   >
-                    {formatDistanceToNow(new Date(lead.createdAt), { addSuffix: true })}
+                    {lead.invoiceNumber ?? "—"}
+                  </TableCell>
+                  <TableCell
+                    className="text-muted-foreground cursor-pointer text-sm whitespace-nowrap"
+                    onClick={() => router.push(`/dashboard/leads/${lead.id}`)}
+                  >
+                    {new Date(lead.createdAt).toLocaleString("en-IN", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })}
                   </TableCell>
                   {canDelete && (
                     <TableCell onClick={(e) => e.stopPropagation()}>

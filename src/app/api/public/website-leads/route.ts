@@ -46,6 +46,25 @@ export async function POST(request: NextRequest) {
       : null;
     const packageInterest = matchedPackage?.name ?? input.package;
 
+    // The website sends dates as "YYYY-MM-DD" strings and guest counts as
+    // numeric strings — parse defensively so a malformed value just leaves
+    // the field unset rather than 500ing the whole inquiry.
+    const parseDate = (v?: string) => {
+      if (!v) return undefined;
+      const d = new Date(v);
+      return Number.isNaN(d.getTime()) ? undefined : d;
+    };
+    const parseCount = (v?: string) => {
+      if (!v) return undefined;
+      const n = Number.parseInt(v, 10);
+      return Number.isNaN(n) ? undefined : n;
+    };
+    const checkInDate = parseDate(input.checkIn);
+    const checkOutDate = parseDate(input.checkOut);
+    const guestsAdults = parseCount(input.guestsAdults);
+    const guestsKids = parseCount(input.guestsKids);
+    const guestsInfants = parseCount(input.guestsInfants);
+
     const lead = await db.lead.create({
       data: {
         fullName: input.name,
@@ -57,13 +76,26 @@ export async function POST(request: NextRequest) {
         statusId: defaultStatus.id,
         assignedToId,
         invoiceNumber,
+        checkInDate,
+        checkOutDate,
+        guestsAdults,
+        guestsKids,
+        guestsInfants,
       },
     });
+
+    const guestBreakdown = [
+      guestsAdults ? `${guestsAdults} adult${guestsAdults === 1 ? "" : "s"}` : null,
+      guestsKids ? `${guestsKids} kid${guestsKids === 1 ? "" : "s"}` : null,
+      guestsInfants ? `${guestsInfants} infant${guestsInfants === 1 ? "" : "s"}` : null,
+    ]
+      .filter(Boolean)
+      .join(", ");
 
     const tripDetails = [
       input.checkIn ? `Check-in: ${input.checkIn}` : null,
       input.checkOut ? `Check-out: ${input.checkOut}` : null,
-      input.guests ? `Guests: ${input.guests}` : null,
+      guestBreakdown ? `Guests: ${guestBreakdown}` : input.guests ? `Guests: ${input.guests}` : null,
       packageInterest ? `Package: ${packageInterest}` : null,
     ]
       .filter(Boolean)

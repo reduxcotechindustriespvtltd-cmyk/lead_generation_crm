@@ -7,7 +7,7 @@ const db = new PrismaClient({ adapter });
 
 // Call-disposition statuses matching how the sales team actually works leads
 // over the phone — not a generic New/Contacted/Qualified/Converted pipeline.
-// "Unassigned" is the entry point for every freshly captured lead (isDefault:
+// "New Lead" is the entry point for every freshly captured lead (isDefault:
 // true — see src/app/api/public/website-leads/route.ts, src/lib/meta/sync.ts,
 // src/app/api/meta/webhook/route.ts, src/lib/whatsapp/process-message.ts,
 // all of which look up isDefault to stamp new leads). There's no "Converted"
@@ -15,7 +15,7 @@ const db = new PrismaClient({ adapter });
 // (see src/lib/queries/dashboard.ts, src/lib/queries/analytics.ts), not a
 // lead status, so nothing in this list is isWon.
 const LEAD_STATUSES = [
-  { name: "Unassigned", color: "#6b7280", order: 0, isDefault: true },
+  { name: "New Lead", color: "#6b7280", order: 0, isDefault: true },
   { name: "Assigned", color: "#3b82f6", order: 1 },
   { name: "Follow-up", color: "#f97316", order: 2, requiresFollowUp: true },
   { name: "Call Back", color: "#eab308", order: 3, requiresFollowUp: true },
@@ -38,7 +38,7 @@ const LEAD_STATUSES = [
 // Demo-data-only weighting (heavier at the top of funnel) — keyed by name so
 // it stays valid regardless of how LEAD_STATUSES is reordered/resized.
 const STATUS_DEMO_WEIGHTS: Record<string, number> = {
-  Unassigned: 20,
+  "New Lead": 20,
   Assigned: 20,
   "Follow-up": 14,
   "Call Back": 12,

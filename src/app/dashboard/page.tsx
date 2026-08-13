@@ -99,7 +99,7 @@ export default async function DashboardPage() {
         <StatCard label="Today's Leads" value={counts.today} icon={CalendarDays} accent="purple" />
         <StatCard label="This Week" value={counts.thisWeek} icon={CalendarRange} accent="purple" />
         <StatCard label="Monthly Leads" value={counts.thisMonth} icon={Calendar} accent="purple" />
-        <StatCard label="Unassigned" value={counts.unassigned} icon={UserX} accent="amber" />
+        <StatCard label="New Lead" value={counts.unassigned} icon={UserX} accent="amber" />
         <StatCard label="Assigned" value={counts.assigned} icon={UserCheck} accent="blue" />
         <StatCard label="Converted" value={counts.converted} icon={Trophy} accent="green" />
         <StatCard label="Lost" value={counts.lost} icon={XCircle} accent="red" />

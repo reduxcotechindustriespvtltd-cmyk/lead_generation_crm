@@ -19,7 +19,7 @@ const db = new PrismaClient({ adapter });
 // over the phone — see prisma/seed.ts for the full rationale (this list must
 // stay in sync with that one).
 const LEAD_STATUSES = [
-  { name: "Unassigned", color: "#6b7280", order: 0, isDefault: true },
+  { name: "New Lead", color: "#6b7280", order: 0, isDefault: true },
   { name: "Assigned", color: "#3b82f6", order: 1 },
   { name: "Follow-up", color: "#f97316", order: 2 },
   { name: "Call Back", color: "#eab308", order: 3 },
