@@ -1,5 +1,6 @@
 import "server-only";
 import type { Booking } from "@/generated/prisma/client";
+import { mailServiceAdminRecipients, notifyMailService } from "@/lib/mail-service";
 
 export type BookingEventType = "BOOKING_CREATED" | "BOOKING_UPDATED" | "BOOKING_CANCELLED";
 
@@ -39,13 +40,6 @@ export type BookingEventPayload = {
   adminRecipients: string[];
 };
 
-function adminRecipients(): string[] {
-  return (process.env.ADMIN_NOTIFICATION_EMAILS ?? "")
-    .split(",")
-    .map((email) => email.trim())
-    .filter(Boolean);
-}
-
 export function buildBookingEventPayload(booking: Booking, event: BookingEventType): BookingEventPayload {
   return {
     event,
@@ -80,38 +74,10 @@ export function buildBookingEventPayload(booking: Booking, event: BookingEventTy
 
     cancelledAt: booking.cancelledAt?.toISOString() ?? null,
 
-    adminRecipients: adminRecipients(),
+    adminRecipients: mailServiceAdminRecipients(),
   };
 }
 
-/**
- * Fire-and-forget notification to the standalone mail/invoice service. Never
- * throws and never blocks the caller — a booking create/update/cancel must
- * still succeed even if the mail service is unreachable or unconfigured.
- */
 export async function notifyBookingEvent(payload: BookingEventPayload): Promise<void> {
-  const url = process.env.MAIL_SERVICE_URL;
-  const apiKey = process.env.MAIL_SERVICE_API_KEY;
-  if (!url || !apiKey) return;
-
-  try {
-    const res = await fetch(`${url.replace(/\/$/, "")}/api/webhooks/booking-event`, {
-      method: "POST",
-      headers: { "content-type": "application/json", "x-api-key": apiKey },
-      body: JSON.stringify(payload),
-      // The mail service generates a PDF and sends real SMTP mail
-      // synchronously before responding (two sequential-ish SMTP sends plus
-      // a cold start can add up) — this call runs inside next/server's
-      // after() at every call site, so it's guaranteed to actually finish
-      // even though the booking API already responded. A generous timeout
-      // costs nothing here and avoids false-negative error logs for a
-      // slow-but-successful send.
-      signal: AbortSignal.timeout(25000),
-    });
-    if (!res.ok) {
-      console.error("notifyBookingEvent failed", res.status, await res.text().catch(() => ""));
-    }
-  } catch (error) {
-    console.error("notifyBookingEvent error", error);
-  }
+  await notifyMailService("/api/webhooks/booking-event", payload);
 }

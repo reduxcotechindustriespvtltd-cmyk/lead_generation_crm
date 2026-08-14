@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { db } from "@/lib/db";
 import { handleApiError, jsonError } from "@/lib/api-response";
 import { enforceRateLimit } from "@/lib/rate-limit";
@@ -7,6 +7,7 @@ import { getNextRoundRobinAssignee } from "@/lib/assignment";
 import { revalidateLeadDependents } from "@/lib/revalidate";
 import { publicWebsiteLeadSchema } from "@/lib/validations/public-lead";
 import { generateInvoiceNumber } from "@/lib/invoice";
+import { buildInquiryEventPayload, notifyInquiryEvent } from "@/lib/notify-inquiry-event";
 
 // Public, unauthenticated-by-session intake endpoint for the gsb-holidays
 // marketing site's contact form. Guarded by a shared API key (not JWT
@@ -136,6 +137,9 @@ export async function POST(request: NextRequest) {
     }
 
     revalidateLeadDependents();
+
+    after(() => notifyInquiryEvent(buildInquiryEventPayload(lead, input.message ?? null)));
+
     return NextResponse.json({ success: true, leadId: lead.id, invoiceNumber }, { status: 201 });
   } catch (error) {
     return handleApiError(error);
