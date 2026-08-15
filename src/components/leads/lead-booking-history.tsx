@@ -41,7 +41,17 @@ export function LeadBookingHistory({
   canCancel,
 }: {
   leadId: string;
-  leadDefaults: { fullName: string; phone: string };
+  leadDefaults: {
+    fullName: string;
+    phone: string;
+    email: string | null;
+    checkInDate: string | null;
+    checkOutDate: string | null;
+    guestsAdults: number | null;
+    guestsKids: number | null;
+    guestsInfants: number | null;
+    packageId: string | null;
+  };
   bookings: BookingRow[];
   packages: PackageOption[];
   users: UserOption[];

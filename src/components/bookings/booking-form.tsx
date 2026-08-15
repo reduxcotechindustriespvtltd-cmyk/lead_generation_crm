@@ -184,7 +184,17 @@ export function BookingForm({
   /** When set, the booking is created/edited in the context of a single lead — the
    * "Linked Lead" field is hidden and every submission stays pinned to this lead. */
   lockedLeadId?: string;
-  leadDefaults?: { fullName: string; phone: string };
+  leadDefaults?: {
+    fullName: string;
+    phone: string;
+    email?: string | null;
+    checkInDate?: string | null;
+    checkOutDate?: string | null;
+    guestsAdults?: number | null;
+    guestsKids?: number | null;
+    guestsInfants?: number | null;
+    packageId?: string | null;
+  };
 }) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -224,12 +234,16 @@ export function BookingForm({
       : {
           guestName: leadDefaults?.fullName ?? "",
           phone: leadDefaults?.phone ?? "",
-          email: "",
+          email: leadDefaults?.email ?? "",
+          checkInDate: leadDefaults?.checkInDate ? new Date(leadDefaults.checkInDate) : undefined,
+          checkOutDate: leadDefaults?.checkOutDate
+            ? new Date(leadDefaults.checkOutDate)
+            : undefined,
           nights: 1,
           stayType: "",
-          adultCount: 1,
-          kidsCount: 0,
-          infantCount: 0,
+          adultCount: leadDefaults?.guestsAdults ?? 1,
+          kidsCount: leadDefaults?.guestsKids ?? 0,
+          infantCount: leadDefaults?.guestsInfants ?? 0,
           adultCostPerPerson: 0,
           kidsCostPerPerson: 0,
           b2bAdultAmount: 0,
@@ -244,7 +258,10 @@ export function BookingForm({
           statusId: statuses[0]?.id ?? "",
           leadId: lockedLeadId ?? "",
           assignedToId: "",
-          packageId: "",
+          packageId:
+            leadDefaults?.packageId && packages.some((p) => p.id === leadDefaults.packageId)
+              ? leadDefaults.packageId
+              : "",
         },
   });
 

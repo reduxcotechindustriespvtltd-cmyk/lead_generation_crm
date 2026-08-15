@@ -68,7 +68,17 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
 
       <LeadBookingHistory
         leadId={lead.id}
-        leadDefaults={{ fullName: lead.fullName, phone: lead.phone }}
+        leadDefaults={{
+          fullName: lead.fullName,
+          phone: lead.phone,
+          email: lead.email,
+          checkInDate: lead.checkInDate?.toISOString() ?? null,
+          checkOutDate: lead.checkOutDate?.toISOString() ?? null,
+          guestsAdults: lead.guestsAdults,
+          guestsKids: lead.guestsKids,
+          guestsInfants: lead.guestsInfants,
+          packageId: lead.packageId,
+        }}
         packages={packages.map((p) => ({ ...p, price: p.price.toString() }))}
         users={users}
         statuses={statuses}
