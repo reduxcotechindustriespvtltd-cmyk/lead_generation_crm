@@ -7,13 +7,6 @@ import {
   OAUTH_STATE_COOKIE_MAX_AGE,
 } from "@/lib/meta/oauth-state";
 
-const SCOPES = [
-  "pages_show_list",
-  "pages_read_engagement",
-  "leads_retrieval",
-  "pages_manage_metadata",
-].join(",");
-
 function redirectToIntegrations(errorCode: string) {
   const appUrl = process.env.APP_URL ?? "http://localhost:3000";
   return NextResponse.redirect(`${appUrl}/dashboard/integrations?meta_oauth_error=${errorCode}`);
@@ -34,8 +27,12 @@ export async function GET() {
 
   const appId = process.env.META_APP_ID;
   const appSecret = process.env.META_APP_SECRET;
+  const loginConfigId = process.env.META_LOGIN_CONFIG_ID;
   if (!appId || !appSecret) {
     return redirectToIntegrations("meta_app_not_configured");
+  }
+  if (!loginConfigId) {
+    return redirectToIntegrations("meta_login_config_not_configured");
   }
 
   const appUrl = process.env.APP_URL ?? "http://localhost:3000";
@@ -46,7 +43,8 @@ export async function GET() {
   dialogUrl.searchParams.set("client_id", appId);
   dialogUrl.searchParams.set("redirect_uri", redirectUri);
   dialogUrl.searchParams.set("state", state);
-  dialogUrl.searchParams.set("scope", SCOPES);
+  dialogUrl.searchParams.set("config_id", loginConfigId);
+  dialogUrl.searchParams.set("override_default_response_type", "true");
   dialogUrl.searchParams.set("response_type", "code");
 
   const response = NextResponse.redirect(dialogUrl.toString());
