@@ -615,11 +615,13 @@ export function BookingForm({
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="None">
-                            {(v: string) =>
-                              v === "none"
-                                ? "None"
-                                : (packages.find((p) => p.id === v)?.name ?? "None")
-                            }
+                            {(v: string) => (
+                              <span className="truncate">
+                                {v === "none"
+                                  ? "None"
+                                  : (packages.find((p) => p.id === v)?.name ?? "None")}
+                              </span>
+                            )}
                           </SelectValue>
                         </SelectTrigger>
                       </FormControl>
@@ -692,11 +694,13 @@ export function BookingForm({
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Unassigned">
-                            {(v: string) =>
-                              v === "none"
-                                ? "Unassigned"
-                                : (users.find((u) => u.id === v)?.name ?? "Unassigned")
-                            }
+                            {(v: string) => (
+                              <span className="truncate">
+                                {v === "none"
+                                  ? "Unassigned"
+                                  : (users.find((u) => u.id === v)?.name ?? "Unassigned")}
+                              </span>
+                            )}
                           </SelectValue>
                         </SelectTrigger>
                       </FormControl>
@@ -902,11 +906,13 @@ export function BookingForm({
                         <FormControl>
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="None">
-                              {(v: string) =>
-                                v === "none"
-                                  ? "None"
-                                  : (leads.find((l) => l.id === v)?.fullName ?? "None")
-                              }
+                              {(v: string) => (
+                                <span className="truncate">
+                                  {v === "none"
+                                    ? "None"
+                                    : (leads.find((l) => l.id === v)?.fullName ?? "None")}
+                                </span>
+                              )}
                             </SelectValue>
                           </SelectTrigger>
                         </FormControl>

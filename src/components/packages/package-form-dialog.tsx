@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2, Plus, X } from "lucide-react";
+import { Info, Loader2, Plus, X } from "lucide-react";
 
 import { packageFormSchema, type PackageFormValues } from "@/lib/validations/packages";
 import { Button } from "@/components/ui/button";
@@ -153,6 +153,19 @@ export function PackageFormDialog({
           order: 0,
         },
   });
+
+  const watchedType = form.watch("type");
+  const isVilla = watchedType === "Villa";
+
+  // Villas are priced per-property, not per-person — zero out the kid/infant
+  // rates when switching to Villa so no stale per-person price lingers unused.
+  useEffect(() => {
+    if (isVilla) {
+      form.setValue("priceKid", 0);
+      form.setValue("priceInfant", 0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isVilla]);
 
   async function handleDeleteExistingImage(imageId: string) {
     if (!pkg) return;
@@ -372,8 +385,8 @@ export function PackageFormDialog({
                 control={form.control}
                 name="price"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Price</FormLabel>
+                  <FormItem className={isVilla ? "col-span-2" : undefined}>
+                    <FormLabel>{isVilla ? "Total Villa Price" : "Price"}</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -383,48 +396,58 @@ export function PackageFormDialog({
                         onChange={(e) => field.onChange(e.target.valueAsNumber)}
                       />
                     </FormControl>
+                    {isVilla && (
+                      <p className="text-muted-foreground flex items-start gap-1.5 text-xs">
+                        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        Priced for the entire villa, not per person.
+                      </p>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="priceKid"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Price (Kids)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={field.value ?? ""}
-                        onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="priceInfant"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Price (Infant)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={field.value ?? ""}
-                        onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {!isVilla && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="priceKid"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Price (Kids)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            value={field.value ?? ""}
+                            onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="priceInfant"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Price (Infant)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            value={field.value ?? ""}
+                            onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
               <FormField
                 control={form.control}
                 name="priceUnit"
