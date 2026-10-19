@@ -44,3 +44,11 @@ next-env.d.ts
 
 # local-disk booking attachments (see src/lib/storage/local-file-storage.ts)
 /storage/uploads
+
+# OpenNext
+.open-next
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
